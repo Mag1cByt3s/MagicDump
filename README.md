@@ -109,7 +109,11 @@ Output:
 ## License
 [GPLv3 License](LICENSE)
 
+<br>
+
 ---
+
+<br>
 
 ## Disclaimer
 **MagicDump is intended for authorized use only.** Ensure you have permission before using this tool on any system.
