@@ -108,6 +108,8 @@ User1: Passw0rd!
 
 ---
 
+<br>
+
 ## Logfile example
 
 ```json
