@@ -123,45 +123,33 @@ Output:
 ```json
 {
   "target_host": "192.168.1.100",
-  "operation_time": "2025-01-04T13:53:44Z",
+  "operation_time": "2025-01-04T14:00:00Z",
   "credentials_dumped": {
     "SAM": {
       "status": "success",
-      "file_path": "/home/pascal/.magicdump/dumps/SAM_dump_192.168.1.100.txt"
+      "file_path": "/home/user/.magicdump/dumps/SAM_dump_192.168.1.100.txt"
     },
-    "LSASS": {
+    "LSA": {
       "status": "success",
-      "file_path": "/home/pascal/.magicdump/dumps/LSASS_dump_192.168.1.100.dmp",
-      "decrypted_credentials": [
-        {
-          "username": "Administrator",
-          "password": "SuperSecretPass123"
-        },
-        {
-          "username": "User1",
-          "password": "Passw0rd!"
-        }
-      ]
+      "file_path": "/home/user/.magicdump/dumps/LSA_dump_192.168.1.100.txt"
     },
     "NTDS": {
-      "status": "failed",
-      "error": "Access denied"
+      "status": "success",
+      "file_path": "/home/user/.magicdump/dumps/NTDS_dump_192.168.1.100.txt",
+      "method": "ntdsutil"
     }
   },
-  "warnings": [
-    "Failed to dump NTDS: Access denied"
-  ],
+  "warnings": [],
   "logs": [
     "Starting MagicDump against target 192.168.1.100",
     "Authenticating as user 'Administrator'...",
-    "Connecting to target 192.168.1.100 via SMB...",
-    "Operation: SAM, Status: success",
-    "SAM dump saved to /home/pascal/.magicdump/dumps/SAM_dump_192.168.1.100.txt",
-    "Operation: LSASS, Status: success",
-    "LSASS dumped and decrypted successfully",
-    "Operation: NTDS, Status: failed",
-    "Failed to dump NTDS: Access denied",
-    "Dumping complete. Logs saved to /home/pascal/.magicdump/logs/report_192.168.1.100_20250104135344.json."
+    "Starting SAM dump using netexec...",
+    "SAM dump saved to /home/user/.magicdump/dumps/SAM_dump_192.168.1.100.txt",
+    "Starting LSA dump using netexec...",
+    "LSA dump saved to /home/user/.magicdump/dumps/LSA_dump_192.168.1.100.txt",
+    "Starting NTDS dump using ntdsutil...",
+    "NTDS dump saved to /home/user/.magicdump/dumps/NTDS_dump_192.168.1.100.txt",
+    "Dumping complete. Logs saved to /home/user/.magicdump/logs/report_192.168.1.100_20250104140000.json."
   ]
 }
 ```
