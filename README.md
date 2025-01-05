@@ -132,33 +132,32 @@ EXAMPLE\service_user abcdefabcdefabcdefabcdefabcdefabcdef
 ```json
 {
   "target_host": "192.168.1.100",
-  "operation_time": "2025-01-04T14:00:00Z",
+  "operation_time": "2025-01-05T07:28:58Z",
   "credentials_dumped": {
     "SAM": {
       "status": "success",
-      "file_path": "/home/user/.magicdump/dumps/SAM_dump_192.168.1.100.txt"
+      "file_path": "/home/user/.magicdump/dumps/192.168.1.100/SAM_dump_192.168.1.100.txt"
     },
     "LSA": {
       "status": "success",
-      "file_path": "/home/user/.magicdump/dumps/LSA_dump_192.168.1.100.txt"
+      "file_path": "/home/user/.magicdump/dumps/192.168.1.100/LSA_dump_192.168.1.100.txt"
     },
-    "NTDS": {
+    "LSASS": {
       "status": "success",
-      "file_path": "/home/user/.magicdump/dumps/NTDS_dump_192.168.1.100.txt",
-      "method": "ntdsutil"
+      "file_path": "/home/user/.magicdump/dumps/192.168.1.100/LSASS_dump_192.168.1.100.txt",
+      "method": "lsassy"
     }
   },
   "warnings": [],
   "logs": [
     "Starting MagicDump against target 192.168.1.100",
-    "Authenticating as user 'Administrator'...",
+    "Authenticating as user 'administrator'...",
     "Starting SAM dump using netexec...",
-    "SAM dump saved to /home/user/.magicdump/dumps/SAM_dump_192.168.1.100.txt",
+    "SAM dump saved to /home/user/.magicdump/dumps/192.168.1.100/SAM_dump_192.168.1.100.txt",
     "Starting LSA dump using netexec...",
-    "LSA dump saved to /home/user/.magicdump/dumps/LSA_dump_192.168.1.100.txt",
-    "Starting NTDS dump using ntdsutil...",
-    "NTDS dump saved to /home/user/.magicdump/dumps/NTDS_dump_192.168.1.100.txt",
-    "Dumping complete. Logs saved to /home/user/.magicdump/logs/report_192.168.1.100_20250104140000.json."
+    "LSA dump saved to /home/user/.magicdump/dumps/192.168.1.100/LSA_dump_192.168.1.100.txt",
+    "Starting LSASS dump using lsassy...",
+    "LSASS dump saved to /home/user/.magicdump/dumps/192.168.1.100/LSASS_dump_192.168.1.100.txt"
   ]
 }
 ```
