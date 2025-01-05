@@ -87,6 +87,10 @@ Run the script with the required options:
 ./MagicDump -t 192.168.1.100 -u administrator -H '0123456789abcdef0123456789abcdef'
 ```
 
+```bash
+./MagicDump -t 192.168.1.120 -u administrator -p P@ssw0rd --local-auth
+```
+
 <br>
 
 Output:
