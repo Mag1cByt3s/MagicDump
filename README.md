@@ -1,6 +1,6 @@
 # MagicDump
 
-MagicDump is an automated tool designed to remotely dump credentials from Windows machines, including SAM, LSASS, NTDS, and DPAPI. It simplifies the process of extracting sensitive information, providing organized output and support for multiple authentication methods.
+MagicDump is an automated tool designed to remotely dump credentials from Windows machines, including SAM, LSA, LSASS, NTDS, and DPAPI. It simplifies the process of extracting sensitive information, providing organized output and support for multiple authentication methods.
 
 <br>
 
@@ -9,7 +9,7 @@ MagicDump is an automated tool designed to remotely dump credentials from Window
 <br>
 
 ## Features
-- **Credential Dumping**: Automates dumping of SAM, LSASS, NTDS, and DPAPI credentials.
+- **Credential Dumping**: Automates dumping of SAM, LSA, LSASS, NTDS, and DPAPI credentials.
 - **Flexible Authentication**:
   - Username and Password Authentication.
   - Pass-the-Hash Authentication. 
