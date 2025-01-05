@@ -64,13 +64,13 @@ Run the script with the required options:
 <br>
 
 ### Arguments
-`-t` / `--target`: Specify the target IP address of the Windows machine.
-`-u` / `--username`: Specify the username to authenticate as.
-`-p` / `--password`: Specify the password for authentication.
-`-H` / `--hash`: Specify the NTLM hash for Pass-the-Hash authentication.
-`--local-auth`: Use local authentication (optional).
-`-v` / `--verbose`: Enable verbose output for debugging (optional).
-`-h` / `--help`: Show usage info
+- `-t` / `--target`: Specify the target IP address of the Windows machine.
+- `-u` / `--username`: Specify the username to authenticate as.
+- `-p` / `--password`: Specify the password for authentication.
+- `-H` / `--hash`: Specify the NTLM hash for Pass-the-Hash authentication.
+- `--local-auth`: Use local authentication (optional).
+- `-v` / `--verbose`: Enable verbose output for debugging (optional).
+- `-h` / `--help`: Show usage info
 
 <br>
 
