@@ -12,7 +12,8 @@ MagicDump is an automated tool designed to remotely dump credentials from Window
 - **Credential Dumping**: Automates dumping of SAM, LSASS, NTDS, and DPAPI credentials.
 - **Flexible Authentication**:
   - Username and Password Authentication.
-  - (Upcoming) Pass-the-Hash and Pass-the-Ticket.
+  - Pass-the-Hash Authentication. 
+  - (Upcoming) Pass-the-Ticket Authentication.
 - **Organized Output**:
   - Logs actions in JSON format.
   - Saves dumps and logs to `~/.magicdump/`.
@@ -57,23 +58,19 @@ chmod +x MagicDump
 ## Usage
 Run the script with the required options:
 ```bash
-./MagicDump -t <target_ip> -u <username> -p <password> [--local-auth]
+./MagicDump -t <target_ip> -u <username> [-p <password> | -H <hash>] [--local-auth] [-v]
 ```
 
 <br>
 
 ### Arguments
-- `-t`: specify the target IP address
-- `-u`: specify the username to authenticate as
-- `-p`: specify the password
-- `--local-auth`: Use local authentication (optional).
-
-<br>
-
-For help:
-```bash
-./MagicDump -h
-```
+`-t` / `--target`: Specify the target IP address of the Windows machine.
+`-u` / `--username`: Specify the username to authenticate as.
+`-p` / `--password`: Specify the password for authentication.
+`-H` / `--hash`: Specify the NTLM hash for Pass-the-Hash authentication.
+`--local-auth`: Use local authentication (optional).
+`-v` / `--verbose`: Enable verbose output for debugging (optional).
+`-h` / `--help`: Show usage info
 
 <br>
 
@@ -81,9 +78,13 @@ For help:
 
 <br>
 
-## Example
+## Examples
 ```bash
-./MagicDump -t 192.168.1.100 -u Administrator -p SuperSecretPass123
+./MagicDump -t 192.168.1.100 -u administrator -p SuperSecretPass123
+```
+
+```bash
+./MagicDump -t 192.168.1.100 -u administrator -H 'a066fbf49e79f43fffc449810227e399'
 ```
 
 <br>
@@ -162,7 +163,7 @@ Output:
 <br>
 
 ## Roadmap
-- Add support for Pass-the-Hash and Pass-the-Ticket authentication.
+- Add support for Pass-the-Ticket authentication.
 - Integrate more advanced credential dumping techniques.
 - Encrypt logs and dumps for security.
 

