@@ -5,9 +5,24 @@ BASE_DIR="$HOME/.magicdump"
 LOG_DIR="$BASE_DIR/logs"
 DUMP_DIR="$BASE_DIR/dumps"
 
-# Create directories if they don't exist
-mkdir -p "$LOG_DIR"
-mkdir -p "$DUMP_DIR"
+# Function to ensure a directory exists
+ensure_dir_exists() {
+  local dir="$1"
+  if [[ ! -d "$dir" ]]; then
+    mkdir -p "$dir" || {
+      echo -e "${RED}[ERROR]${RESET} Failed to create directory: $dir. Check permissions."
+      exit 1
+    }
+    [[ $VERBOSE -eq 1 ]] && echo -e "${BLUE}[DEBUG]${RESET} Created directory: $dir"
+  else
+    [[ $VERBOSE -eq 1 ]] && echo -e "${BLUE}[DEBUG]${RESET} Directory already exists: $dir"
+  fi
+}
+
+# Ensure all necessary directories exist
+ensure_dir_exists "$BASE_DIR"
+ensure_dir_exists "$LOG_DIR"
+ensure_dir_exists "$DUMP_DIR"
 
 # Colors
 RED='\033[0;31m'
@@ -111,8 +126,14 @@ fi
 [[ $VERBOSE -eq 1 ]] && echo -e "${BLUE}[DEBUG]${RESET} Verbose mode enabled"
 [[ $LOCAL_AUTH -eq 1 ]] && echo -e "${BLUE}[DEBUG]${RESET} Local authentication enabled (--local-auth)"
 
+# Target-specific directories
+TARGET_DUMP_DIR="$DUMP_DIR/$TARGET_HOST"
+TARGET_LOG_DIR="$LOG_DIR/$TARGET_HOST"
+ensure_dir_exists "$TARGET_DUMP_DIR"
+ensure_dir_exists "$TARGET_LOG_DIR"
+
 # Define log file
-LOG_FILE="$LOG_DIR/report_${TARGET_HOST}_$(date +%Y%m%d%H%M%S).json"
+LOG_FILE="$TARGET_LOG_DIR/report_${TARGET_HOST}_$(date +%Y%m%d%H%M%S).json"
 
 # Initialize JSON log
 cat <<EOF > "$LOG_FILE"
@@ -204,7 +225,7 @@ parse_lsass_output() {
 
 # Dump Functions
 dump_sam() {
-  local output_file="$DUMP_DIR/SAM_dump_${TARGET_HOST}.txt"
+  local output_file="$TARGET_DUMP_DIR/SAM_dump_${TARGET_HOST}.txt"
   local cmd
   cmd=$(construct_base_cmd)" --sam > '$output_file' 2>&1"
 
@@ -220,7 +241,7 @@ dump_sam() {
 }
 
 dump_lsa() {
-  local output_file="$DUMP_DIR/LSA_dump_${TARGET_HOST}.txt"
+  local output_file="$TARGET_DUMP_DIR/LSA_dump_${TARGET_HOST}.txt"
   local cmd
   cmd=$(construct_base_cmd)" --lsa > '$output_file' 2>&1"
 
@@ -237,7 +258,7 @@ dump_lsa() {
 
 dump_lsass() {
   local method="${1:-lsassy}"
-  local output_file="$DUMP_DIR/LSASS_dump_${TARGET_HOST}.txt"
+  local output_file="$TARGET_DUMP_DIR/LSASS_dump_${TARGET_HOST}.txt"
   local cmd
   cmd=$(construct_base_cmd)
 
