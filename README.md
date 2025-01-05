@@ -57,7 +57,7 @@ chmod +x MagicDump
 ## Usage
 Run the script with the required options:
 ```bash
-./MagicDump -t <target_ip> -u <username> -p <password>
+./MagicDump -t <target_ip> -u <username> -p <password> [--local-auth]
 ```
 
 <br>
@@ -66,6 +66,7 @@ Run the script with the required options:
 - `-t`: specify the target IP address
 - `-u`: specify the username to authenticate as
 - `-p`: specify the password
+- `--local-auth`: Use local authentication (optional).
 
 <br>
 
