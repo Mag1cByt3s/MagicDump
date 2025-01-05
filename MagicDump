@@ -237,7 +237,7 @@ dump_lsa() {
 
 dump_lsass() {
   local method="${1:-lsassy}"
-  local output_file="$DUMP_DIR/LSASS_dump_${TARGET_HOST}.dmp"
+  local output_file="$DUMP_DIR/LSASS_dump_${TARGET_HOST}.txt"
   local cmd
   cmd=$(construct_base_cmd)
 
