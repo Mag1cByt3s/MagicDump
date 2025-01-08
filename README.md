@@ -13,7 +13,7 @@ MagicDump is an automated tool designed to remotely dump credentials from Window
 - **Flexible Authentication**:
   - Username and Password Authentication.
   - Pass-the-Hash Authentication. 
-  - (Upcoming) Pass-the-Ticket Authentication.
+  - Pass-the-Ticket Authentication.
 - **Organized Output**:
   - Logs actions in JSON format.
   - Saves dumps and logs to `~/.magicdump/`.
@@ -58,7 +58,7 @@ chmod +x MagicDump
 ## Usage
 Run the script with the required options:
 ```bash
-./MagicDump -t <target_ip> -u <username> [-p <password> | -H <hash>] [--local-auth] [-v]
+./MagicDump -t <target_ip> -u <username> [-p <password> | -H <hash> | -k [--no-pass]] [--local-auth] [-v]
 ```
 
 <br>
@@ -68,6 +68,9 @@ Run the script with the required options:
 - `-u` / `--username`: Specify the username to authenticate as.
 - `-p` / `--password`: Specify the password for authentication.
 - `-H` / `--hash`: Specify the NTLM hash for Pass-the-Hash authentication.
+- `k` / `--kerberos`: Use Kerberos authentication. Requires a valid Kerberos ticket.
+  - If using Kerberos ticket cache (no password or hash), set the `KRB5CCNAME` environment variable to the path of your ticket and use `--no-pass`.
+- `--no-pass`: Skip password or hash when using Kerberos authentication. Requires `-k`.
 - `--local-auth`: Use local authentication (optional).
 - `-v` / `--verbose`: Enable verbose output for debugging (optional).
 - `-h` / `--help`: Show usage info
@@ -187,7 +190,6 @@ EXAMPLE\service_user abcdefabcdefabcdefabcdefabcdefabcdef
 <br>
 
 ## Roadmap
-- Add support for Pass-the-Ticket authentication.
 - Integrate more advanced credential dumping techniques.
 - Encrypt logs and dumps for security.
 
