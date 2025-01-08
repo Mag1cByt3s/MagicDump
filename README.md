@@ -79,16 +79,30 @@ Run the script with the required options:
 <br>
 
 ## Examples
+
+Password auth:
 ```bash
 ./MagicDump -t 192.168.1.100 -u administrator -p SuperSecretPass123
 ```
 
+Pass-the-Hash:
 ```bash
 ./MagicDump -t 192.168.1.100 -u administrator -H '0123456789abcdef0123456789abcdef'
 ```
 
+Local auth:
 ```bash
 ./MagicDump -t 192.168.1.120 -u administrator -p P@ssw0rd --local-auth
+```
+
+Pass-the-Ticket (Kerberos auth):
+```bash
+KRB5CCNAME=administrator@cifs_dc.company.com@COMPANY.COM.ccache ./MagicDump -t dc.company.com -u administrator -k --no-pass
+```
+
+Kerberos auth with password:
+```bash
+./MagicDump -t dc.company.com -u administrator -p 'StrongPassword123' -k
 ```
 
 <br>

