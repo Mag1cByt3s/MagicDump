@@ -1,6 +1,6 @@
 # MagicDump
 
-MagicDump is an automated tool designed to remotely dump credentials from Windows machines, including SAM, LSA, LSASS, NTDS, and DPAPI. It simplifies the process of extracting sensitive information, providing organized output and support for multiple authentication methods.
+MagicDump is an automated tool designed to remotely dump credentials from Windows machines, including SAM, LSA, NTDS, and DPAPI. It simplifies the process of extracting sensitive information, providing organized output and support for multiple authentication methods.
 
 <br>
 
@@ -9,7 +9,7 @@ MagicDump is an automated tool designed to remotely dump credentials from Window
 <br>
 
 ## Features
-- **Credential Dumping**: Automates dumping of SAM, LSA, LSASS, NTDS, and DPAPI credentials.
+- **Credential Dumping**: Automates dumping of SAM, LSA, NTDS, and DPAPI credentials.
 - **Flexible Authentication**:
   - Username and Password Authentication.
   - Pass-the-Hash Authentication. 
@@ -134,11 +134,6 @@ SMB                      192.168.1.100    445    HOST               EXAMPLE\HOST
 SMB                      192.168.1.100    445    HOST               EXAMPLE\HOST$:plain_password_hex:d41d8cd98f00b204e9800998ecf8427e
 SMB                      192.168.1.100    445    HOST               NL$KM:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 SMB                      192.168.1.100    445    HOST               EXAMPLE\service_user:ServicePass123
-[INFO] Starting LSASS dump using lsassy...
-[LOG] Operation: LSASS, Status: success
-[INFO] LSASS dump saved to ~/.magicdump/dumps/192.168.1.100/LSASS_dump_192.168.1.100.txt
-[LSASS CREDENTIALS FOUND]:
-EXAMPLE\service_user abcdefabcdefabcdefabcdefabcdefabcdef
 [INFO] Dumping complete. Logs saved to ~/.magicdump/logs/192.168.1.100/report_192.168.1.100_20250105080107.json.
 ```
 
@@ -162,11 +157,6 @@ EXAMPLE\service_user abcdefabcdefabcdefabcdefabcdefabcdef
     "LSA": {
       "status": "success",
       "file_path": "/home/user/.magicdump/dumps/192.168.1.100/LSA_dump_192.168.1.100.txt"
-    },
-    "LSASS": {
-      "status": "success",
-      "file_path": "/home/user/.magicdump/dumps/192.168.1.100/LSASS_dump_192.168.1.100.txt",
-      "method": "lsassy"
     }
   },
   "warnings": [],
@@ -176,9 +166,7 @@ EXAMPLE\service_user abcdefabcdefabcdefabcdefabcdefabcdef
     "Starting SAM dump using netexec...",
     "SAM dump saved to /home/user/.magicdump/dumps/192.168.1.100/SAM_dump_192.168.1.100.txt",
     "Starting LSA dump using netexec...",
-    "LSA dump saved to /home/user/.magicdump/dumps/192.168.1.100/LSA_dump_192.168.1.100.txt",
-    "Starting LSASS dump using lsassy...",
-    "LSASS dump saved to /home/user/.magicdump/dumps/192.168.1.100/LSASS_dump_192.168.1.100.txt"
+    "LSA dump saved to /home/user/.magicdump/dumps/192.168.1.100/LSA_dump_192.168.1.100.txt"
   ]
 }
 ```

