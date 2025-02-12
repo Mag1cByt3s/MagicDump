@@ -391,6 +391,11 @@ parse_laps_output() {
   local output_file="$1"
   echo -e "${GREEN}[LAPS PASSWORDS FOUND]:${RESET}"
 
+  if grep -q "\[-\] No result found with attribute ms-MCS-AdmPwd or msLAPS-Password" "$output_file"; then
+    echo -e "${YELLOW}No LAPS passwords found.${RESET}"
+    return
+  fi
+
   grep "Computer:" "$output_file" | while IFS= read -r line; do
     # Extract fields
     computer=$(echo "$line" | grep -oP "(?<=Computer:)[^ ]+")
