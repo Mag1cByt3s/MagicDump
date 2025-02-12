@@ -68,7 +68,7 @@ RESET='\033[0m'
 
 # Dynamic banner
 echo -e "${BLUE}==============================${RESET}"
-echo -e "${GREEN}       MagicDump v1.0       ${RESET}"
+echo -e "${GREEN}       MagicDump v2.0       ${RESET}"
 echo -e "${BLUE}==============================${RESET}"
 
 # Check for required tools
