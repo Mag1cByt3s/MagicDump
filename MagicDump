@@ -758,8 +758,8 @@ dump_keepass
 dump_veeam
 dump_winscp
 dump_putty
-dump_vnc
-dump_mremoteng
+#dump_vnc
+#dump_mremoteng
 dump_rdcman
 dump_wifi_passwords
 dump_sccm

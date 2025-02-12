@@ -21,8 +21,6 @@ MagicDump is an automated tool designed to remotely dump credentials from Window
   - Veeam backup credentials
   - WinSCP stored sessions
   - PuTTY private keys & proxy credentials
-  - VNC (RealVNC & TightVNC) stored credentials
-  - mRemoteNG stored credentials
   - Remote Desktop Connection Manager (RDCMan) stored credentials
 - **Flexible Authentication**:
   - Username and Password Authentication.
