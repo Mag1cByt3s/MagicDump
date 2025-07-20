@@ -19,39 +19,41 @@ ensure_dir_exists() {
   fi
 }
 
+# This does not work reliably at the moment
 # Function to extract DC name from Kerberos ticket
-get_dc_name_from_kerberos_ticket() {
-  local ccache_file="${KRB5CCNAME:-/tmp/krb5cc_$(id -u)}"  # Use KRB5CCNAME if set, otherwise default location
-  if [[ ! -f "$ccache_file" ]]; then
-    echo -e "${RED}[ERROR]${RESET} Kerberos ticket cache file not found at $ccache_file."
-    exit 1
-  fi
+# get_dc_name_from_kerberos_ticket() {
+#   local ccache_file="${KRB5CCNAME:-/tmp/krb5cc_$(id -u)}"  # Use KRB5CCNAME if set, otherwise default location
+#   if [[ ! -f "$ccache_file" ]]; then
+#     echo -e "${RED}[ERROR]${RESET} Kerberos ticket cache file not found at $ccache_file."
+#     exit 1
+#   fi
 
-  # Extract DC name from the ticket
-  local dc_name
-  dc_name=$(klist -c "$ccache_file" | awk '/Service principal/ {getline; print $NF}' | sed 's|^cifs/||; s|@.*$||')
+#   # Extract DC name from the ticket
+#   local dc_name
+#   dc_name=$(klist -c "$ccache_file" | awk '/Service principal/ {getline; print $NF}' | sed 's|^cifs/||; s|@.*$||')
 
-  if [[ -z "$dc_name" ]]; then
-    echo -e "${RED}[ERROR]${RESET} Failed to extract the DC name from Kerberos ticket."
-    exit 1
-  fi
+#   if [[ -z "$dc_name" ]]; then
+#     echo -e "${RED}[ERROR]${RESET} Failed to extract the DC name from Kerberos ticket."
+#     exit 1
+#   fi
 
-  echo "$dc_name"
-}
+#   echo "$dc_name"
+# }
 
+# This does not work reliably at the moment
 # Function to validate if the DC name matches the target
-validate_kerberos_target() {
-  local target="$1"
-  local dc_name
-  dc_name=$(get_dc_name_from_kerberos_ticket)
+# validate_kerberos_target() {
+#   local target="$1"
+#   local dc_name
+#   dc_name=$(get_dc_name_from_kerberos_ticket)
 
-  if [[ "$target" != "$dc_name" ]]; then
-    echo -e "${RED}[ERROR]${RESET} Target DC name ($target) does not match the Kerberos ticket's DC name ($dc_name)."
-    exit 1
-  else
-    [[ $VERBOSE -eq 1 ]] && echo -e "${GREEN}[INFO]${RESET} Target DC name matches the Kerberos ticket's DC name: $dc_name"
-  fi
-}
+#   if [[ "$target" != "$dc_name" ]]; then
+#     echo -e "${RED}[ERROR]${RESET} Target DC name ($target) does not match the Kerberos ticket's DC name ($dc_name)."
+#     exit 1
+#   else
+#     [[ $VERBOSE -eq 1 ]] && echo -e "${GREEN}[INFO]${RESET} Target DC name matches the Kerberos ticket's DC name: $dc_name"
+#   fi
+# }
 
 # Ensure all necessary directories exist
 ensure_dir_exists "$BASE_DIR"
@@ -189,7 +191,9 @@ fi
 
 if [[ $KRB_AUTH -eq 1 ]]; then
   add_log "Using Kerberos authentication."
-  validate_kerberos_target "$TARGET_HOST"
+
+  # this does not work reliably at the moment
+  #validate_kerberos_target "$TARGET_HOST"
 else
   if [[ -z "$PASSWORD" && -z "$HASH" ]]; then
     echo -e "${RED}[ERROR]${RESET} Either a password (-p) or a hash (-H) must be provided if not using Kerberos authentication (-k)."
